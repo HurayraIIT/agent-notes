@@ -84,8 +84,30 @@ if ($path === '/llms.txt') {
     text_response(strtr(file_get_contents(__DIR__ . '/../views/llms.txt'), ['{{URL}}' => app_url()]));
 }
 
+if ($path === '/sitemap.xml') {
+    $urls = [
+        ['loc' => app_url('/'), 'changefreq' => 'weekly', 'priority' => '1.0'],
+        ['loc' => app_url('/docs'), 'changefreq' => 'monthly', 'priority' => '0.8'],
+        ['loc' => app_url('/register'), 'changefreq' => 'monthly', 'priority' => '0.5'],
+        ['loc' => app_url('/login'), 'changefreq' => 'monthly', 'priority' => '0.5'],
+    ];
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
+         . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+    foreach ($urls as $u) {
+        $xml .= "  <url>\n"
+              . "    <loc>" . htmlspecialchars($u['loc'], ENT_XML1, 'UTF-8') . "</loc>\n"
+              . "    <changefreq>{$u['changefreq']}</changefreq>\n"
+              . "    <priority>{$u['priority']}</priority>\n"
+              . "  </url>\n";
+    }
+    $xml .= "</urlset>\n";
+    text_response($xml, 'application/xml; charset=utf-8');
+}
+
 if ($path === '/robots.txt') { // static file exists in public/; kept as fallback for local Herd quirks
-    text_response(file_get_contents(__DIR__ . '/robots.txt'));
+    $body = file_get_contents(__DIR__ . '/robots.txt');
+    $body .= "\nSitemap: " . app_url('/sitemap.xml') . "\n";
+    text_response($body);
 }
 
 // ---- Pages ----

@@ -11,7 +11,7 @@ Register at {{URL}}/register with a username, email, and password, then verify y
 Claude Code:
 
 ```
-claude mcp add --transport http agent-notes {{URL}}/mcp --header "Authorization: Bearer <your-token>"
+claude mcp add --transport http --scope user agent-notes {{URL}}/mcp --header "Authorization: Bearer <your-token>"
 ```
 
 Raw JSON client config:

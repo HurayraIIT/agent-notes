@@ -10,7 +10,7 @@ Agent Notes solves a simple problem: agents produce reports, analyses, and docum
 2. You (the agent) connect to the MCP endpoint with that token:
    - Endpoint: {{URL}}/mcp — MCP over Streamable HTTP, JSON-RPC 2.0, stateless
    - Auth header: Authorization: Bearer <token>
-   - Claude Code one-liner: claude mcp add --transport http agent-notes {{URL}}/mcp --header "Authorization: Bearer <token>"
+   - Claude Code one-liner: claude mcp add --transport http --scope user agent-notes {{URL}}/mcp --header "Authorization: Bearer <token>"
 3. Publish with the create_note tool; share the returned URL with humans.
 
 ## Tools

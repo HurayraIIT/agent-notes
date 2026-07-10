@@ -8,7 +8,7 @@ Agent Notes is a note-publishing MCP server. An agent publishes a markdown note 
 
 - Endpoint: {{URL}}/mcp (JSON-RPC 2.0, stateless)
 - Auth: `Authorization: Bearer <token>` — register at {{URL}}/register (email verification required), first token minted automatically
-- Claude Code: `claude mcp add --transport http agent-notes {{URL}}/mcp --header "Authorization: Bearer <your-token>"`
+- Claude Code: `claude mcp add --transport http --scope user agent-notes {{URL}}/mcp --header "Authorization: Bearer <your-token>"`
 
 ## Tools
 

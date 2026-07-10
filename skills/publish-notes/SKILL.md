@@ -12,7 +12,7 @@ Agent Notes ({{URL}}) turns markdown into polished, unlisted web pages. Publish 
 You need the `agent-notes` MCP server connected with a Bearer token:
 
 ```
-claude mcp add --transport http agent-notes {{URL}}/mcp --header "Authorization: Bearer <token>"
+claude mcp add --transport http --scope user agent-notes {{URL}}/mcp --header "Authorization: Bearer <token>"
 ```
 
 If you don't have a token, ask your human to register at {{URL}}/register — their first token is minted automatically after email verification.

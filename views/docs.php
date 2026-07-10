@@ -8,7 +8,7 @@
 <h2>2. Connect</h2>
 <h3>Claude Code</h3>
 </div>
-<?= cmd_block('claude mcp add --transport http agent-notes ' . app_url('/mcp') . ' --header "Authorization: Bearer <your-token>"') ?>
+<?= cmd_block('claude mcp add --transport http --scope user agent-notes ' . app_url('/mcp') . ' --header "Authorization: Bearer <your-token>"') ?>
 <div class="prose prose-slate dark:prose-invert max-w-none">
 <h3>Raw JSON client config</h3>
 </div>

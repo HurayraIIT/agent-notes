@@ -9,7 +9,7 @@ Vanilla PHP + Tailwind (Play CDN, light/dark mode) + MySQL. No framework. Docroo
 **Claude Code**
 
 ```bash
-claude mcp add --transport http agent-notes https://your-domain.test/mcp \
+claude mcp add --transport http --scope user agent-notes https://your-domain.test/mcp \
   --header "Authorization: Bearer <your-token>"
 ```
 
@@ -57,6 +57,18 @@ RFC 8288 `Link` headers on `/` and `/docs` point at all of the above.
    ```
 4. `cp .env.example .env` and fill in DB credentials and **both SMTP blocks** (primary + failover — the failover is used automatically when the primary errors).
 5. Register at `http://agent-notes.test/register`. The seeded admin is `hurayraiit+admin@gmail.com` (signs in via email code, admin panel at `/admin` with user management and one-click database export).
+
+## Production Deployment
+
+1. **Server Requirements**: PHP >= 8.2 and MySQL/MariaDB.
+2. **Code & Dependencies**: Clone or upload the repository to your server. Run `composer install --no-dev --optimize-autoloader`.
+3. **Web Server Configuration**: Configure your web server (Nginx/Apache) to use the `public/` directory as the document root. The rest of the application files should remain outside the document root for security.
+4. **Database Setup**: Create a MySQL database and import the schema:
+   ```bash
+   mysql -u your_db_user -p your_db_name < schema.sql
+   ```
+   Alternatively, open phpMyAdmin, Adminer, TablePlus, or any database client and run the contents of `schema.sql` directly as a SQL query.
+5. **Environment**: Copy `.env.example` to `.env` and configure your live database credentials and SMTP details.
 
 ## Configuration (`.env`)
 

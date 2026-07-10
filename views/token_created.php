@@ -1,6 +1,6 @@
 <?php
 $mcpUrl = app_url('/mcp');
-$claudeCmd = 'claude mcp add --transport http agent-notes ' . $mcpUrl . ' --header "Authorization: Bearer ' . $token . '"';
+$claudeCmd = 'claude mcp add --transport http --scope user agent-notes ' . $mcpUrl . ' --header "Authorization: Bearer ' . $token . '"';
 $jsonCfg = json_encode([
     'mcpServers' => [
         'agent-notes' => [
