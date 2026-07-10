@@ -1,40 +1,43 @@
-<div class="prose prose-slate max-w-none">
+<div class="prose prose-slate dark:prose-invert max-w-none">
 <h1>Agent setup</h1>
 <p>Agent Notes is an MCP server. Your agent authenticates with a Bearer token and gets five tools covering the full note lifecycle. Everything below is also machine-readable — agents can fetch this page with <code>Accept: text/markdown</code>.</p>
 
 <h2>1. Get a token</h2>
-<p><a href="/login">Sign in</a> with your email (a 6-digit code, no password). Your first API token is minted automatically and shown once. More tokens can be created from the <a href="/dashboard">dashboard</a>.</p>
+<p><a href="/register">Register</a> with a username, email, and password, then verify your email with the 6-digit code we send. Your first API token is minted automatically and shown once. More tokens can be created from the <a href="/dashboard">dashboard</a>. To sign in later, use your username or email + password — or just request a one-time email code.</p>
 
 <h2>2. Connect</h2>
 <h3>Claude Code</h3>
-<pre><code>claude mcp add --transport http agent-notes <?= e(app_url('/mcp')) ?> \
-  --header "Authorization: Bearer &lt;your-token&gt;"</code></pre>
-
+</div>
+<?= cmd_block('claude mcp add --transport http agent-notes ' . app_url('/mcp') . ' --header "Authorization: Bearer <your-token>"') ?>
+<div class="prose prose-slate dark:prose-invert max-w-none">
 <h3>Raw JSON client config</h3>
-<pre><code>{
-  "mcpServers": {
-    "agent-notes": {
-      "type": "http",
-      "url": "<?= e(app_url('/mcp')) ?>",
-      "headers": { "Authorization": "Bearer &lt;your-token&gt;" }
-    }
-  }
-}</code></pre>
-
+</div>
+<?= cmd_block(json_encode([
+    'mcpServers' => [
+        'agent-notes' => [
+            'type' => 'http',
+            'url' => app_url('/mcp'),
+            'headers' => ['Authorization' => 'Bearer <your-token>'],
+        ],
+    ],
+], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) ?>
+<div class="prose prose-slate dark:prose-invert max-w-none">
 <h2>3. Tools</h2>
-<table>
-<thead><tr><th>Tool</th><th>Arguments</th><th>Returns</th></tr></thead>
-<tbody>
-<tr><td><code>create_note</code></td><td><code>title</code>, <code>content</code> (GFM markdown, max 1&nbsp;MB)</td><td>Shareable URL + slug</td></tr>
-<tr><td><code>update_note</code></td><td><code>slug</code>, optional <code>title</code>/<code>content</code></td><td>URL (unchanged)</td></tr>
-<tr><td><code>get_note</code></td><td><code>slug</code></td><td>Full note incl. content</td></tr>
-<tr><td><code>list_notes</code></td><td>optional <code>limit</code>, <code>offset</code></td><td>Your notes, newest first</td></tr>
-<tr><td><code>delete_note</code></td><td><code>slug</code></td><td>Confirmation</td></tr>
+<div class="not-prose overflow-x-auto">
+<table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg">
+<thead class="bg-slate-100 dark:bg-slate-800"><tr><th class="px-3 py-2 text-left">Tool</th><th class="px-3 py-2 text-left">Arguments</th><th class="px-3 py-2 text-left">Returns</th></tr></thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr><td class="px-3 py-2"><code>create_note</code></td><td class="px-3 py-2"><code>title</code>, <code>content</code> (GFM markdown, max 1&nbsp;MB)</td><td class="px-3 py-2">Shareable URL + slug</td></tr>
+<tr><td class="px-3 py-2"><code>update_note</code></td><td class="px-3 py-2"><code>slug</code>, optional <code>title</code>/<code>content</code></td><td class="px-3 py-2">URL (unchanged)</td></tr>
+<tr><td class="px-3 py-2"><code>get_note</code></td><td class="px-3 py-2"><code>slug</code></td><td class="px-3 py-2">Full note incl. content</td></tr>
+<tr><td class="px-3 py-2"><code>list_notes</code></td><td class="px-3 py-2">optional <code>limit</code>, <code>offset</code></td><td class="px-3 py-2">Your notes, newest first</td></tr>
+<tr><td class="px-3 py-2"><code>delete_note</code></td><td class="px-3 py-2"><code>slug</code></td><td class="px-3 py-2">Confirmation</td></tr>
 </tbody>
 </table>
+</div>
 
 <h2>Note URLs</h2>
-<p>Every note lives at <code><?= e(app_url('/n/')) ?>&lt;slug&gt;</code> — a readable title plus a random unguessable suffix. Humans see rendered GitHub-flavored markdown with <strong>Raw</strong>, <strong>Download .md</strong>, and <strong>Print/PDF</strong> buttons. Agents requesting a note URL with <code>Accept: text/markdown</code> get the raw markdown. <code>/raw</code> and <code>/download</code> suffixes work too. Notes are unlisted: anyone with the link can read, nothing is indexed or enumerable.</p>
+<p>Every note lives at <code><?= e(app_url('/n/')) ?>&lt;slug&gt;</code> — a readable title plus a random unguessable suffix. Humans see rendered GitHub-flavored markdown with <strong>Raw</strong>, <strong>Download .md</strong>, and <strong>Download PDF</strong> buttons. Agents requesting a note URL with <code>Accept: text/markdown</code> get the raw markdown. <code>/raw</code>, <code>/download</code>, and <code>/pdf</code> suffixes work too. Notes are unlisted: anyone with the link can read, nothing is indexed or enumerable.</p>
 
 <h2>Limits</h2>
 <ul>
@@ -53,4 +56,9 @@
 
 <h2>Crawler policy</h2>
 <p><code>robots.txt</code> carries a <code>Content-Signal</code>: content here may be used as AI input, but not for training. Note pages send <code>X-Robots-Tag: noindex</code>.</p>
+</div>
+
+<div class="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 text-center">
+    <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Enjoying Agent Notes? You can support its development:</p>
+    <a href="https://www.buymeacoffee.com/hurayraiit" target="_blank" rel="noopener" class="inline-block"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me a Coffee" style="height: 60px !important;width: 217px !important;"></a>
 </div>

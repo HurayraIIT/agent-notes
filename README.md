@@ -1,8 +1,8 @@
 # Agent Notes
 
-A note-publishing service built for AI agents. An agent connects over [MCP](https://modelcontextprotocol.io), publishes a markdown note, and instantly gets back a clean, unlisted URL that renders beautifully for any human who opens it — raw view, `.md` download, and print-to-PDF included.
+A note-publishing service built for AI agents. An agent connects over [MCP](https://modelcontextprotocol.io), publishes a markdown note, and instantly gets back a clean, unlisted URL that renders beautifully for any human who opens it — raw view, `.md` download, and PDF download included.
 
-Vanilla PHP + Tailwind (Play CDN) + MySQL. No framework.
+Vanilla PHP + Tailwind (Play CDN, light/dark mode) + MySQL. No framework. Docroot is `public/`; application code lives outside it.
 
 ## Connect an agent
 
@@ -27,7 +27,7 @@ claude mcp add --transport http agent-notes https://your-domain.test/mcp \
 }
 ```
 
-Get a token by signing in (email code, no password) — the first one is minted automatically.
+Get a token by registering (username + email + password, verified by an emailed 6-digit code) — the first one is minted automatically. Sign in later with username/email + password, or with a one-time email code.
 
 **Tools:** `create_note`, `update_note`, `get_note`, `list_notes`, `delete_note`.
 
@@ -56,7 +56,7 @@ RFC 8288 `Link` headers on `/` and `/docs` point at all of the above.
    mysql -h 127.0.0.1 -u root -p agent_notes < schema.sql
    ```
 4. `cp .env.example .env` and fill in DB credentials and **both SMTP blocks** (primary + failover — the failover is used automatically when the primary errors).
-5. Sign in at `http://agent-notes.test/login`. The seeded admin is `hurayraiit+admin@gmail.com` (admin panel at `/admin`).
+5. Register at `http://agent-notes.test/register`. The seeded admin is `hurayraiit+admin@gmail.com` (signs in via email code, admin panel at `/admin` with user management and one-click database export).
 
 ## Configuration (`.env`)
 
@@ -65,10 +65,11 @@ RFC 8288 `Link` headers on `/` and `/docs` point at all of the above.
 | `RATE_LIMIT_PER_MIN` | 60 | MCP requests per minute per token |
 | `NOTE_MAX_BYTES` | 1048576 | Max note size (1 MB) |
 | `MAIL_PRIMARY_*` / `MAIL_FAILOVER_*` | — | Two full SMTP blocks: HOST, PORT, USERNAME, PASSWORD, ENCRYPTION, FROM_ADDRESS, FROM_NAME |
+| `MYSQLDUMP_PATH` | auto-detect | Full path to `mysqldump` for the admin DB export |
 
 ## Security model
 
 - API tokens: 192-bit random, shown once, stored as SHA-256 hashes, revocable from the dashboard.
-- Passwordless auth: 6-digit emailed codes (hashed, 10-min expiry, attempt-limited), 7-day DB-backed sessions.
+- Auth: bcrypt password hashes, mandatory email verification (hashed 6-digit codes, 10-min expiry, attempt-limited), rate-limited login/registration, 7-day DB-backed sessions.
 - Notes are unlisted: slug = title + 10 random base62 chars; note pages send `X-Robots-Tag: noindex`.
 - Markdown is rendered with raw HTML escaped and unsafe links stripped.

@@ -3,6 +3,9 @@
 CREATE TABLE users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
+    username VARCHAR(50) NULL UNIQUE,
+    password_hash VARCHAR(255) NULL,
+    email_verified_at DATETIME NULL,
     is_admin TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at DATETIME NULL,
@@ -14,6 +17,7 @@ CREATE TABLE login_codes (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL,
     code_hash CHAR(64) NOT NULL,
+    purpose VARCHAR(10) NOT NULL DEFAULT 'login',
     attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
     expires_at DATETIME NOT NULL,
     consumed_at DATETIME NULL,
@@ -64,5 +68,5 @@ CREATE TABLE rate_limits (
     PRIMARY KEY (bucket_key, window_start)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Seeded admin account
-INSERT INTO users (email, is_admin) VALUES ('hurayraiit+admin@gmail.com', 1);
+-- Seeded admin account (pre-verified; sets username/password via Account settings after OTP login)
+INSERT INTO users (email, is_admin, email_verified_at) VALUES ('hurayraiit+admin@gmail.com', 1, NOW());

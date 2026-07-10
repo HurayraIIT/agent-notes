@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/src/bootstrap.php';
+require __DIR__ . '/../src/bootstrap.php';
 
 $path = rtrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/', '/') ?: '/';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -13,7 +13,7 @@ if ($path === '/mcp') {
 }
 
 // ---- Notes ----
-if (preg_match('#^/n/([A-Za-z0-9-]+)(/raw|/download)?$#', $path, $m)) {
+if (preg_match('#^/n/([A-Za-z0-9-]+)(/raw|/download|/pdf)?$#', $path, $m)) {
     $note = get_note($m[1]);
     if (!$note) {
         http_response_code(404);
@@ -27,6 +27,9 @@ if (preg_match('#^/n/([A-Za-z0-9-]+)(/raw|/download)?$#', $path, $m)) {
     if ($mode === '/download') {
         header('Content-Disposition: attachment; filename="' . $note['slug'] . '.md"');
         text_response($note['content'], 'text/markdown; charset=utf-8');
+    }
+    if ($mode === '/pdf') {
+        note_pdf($note);
     }
     http_response_code(200);
     echo view('note', ['note' => $note, 'html' => markdown_to_html($note['content'])]);
@@ -44,7 +47,7 @@ if ($path === '/.well-known/mcp/server-card.json') {
         'protocolVersion' => MCP_PROTOCOL_VERSION,
         'authentication' => [
             'type' => 'bearer',
-            'description' => 'API token in the Authorization: Bearer header. Sign in at ' . app_url('/login') . ' to get one.',
+            'description' => 'API token in the Authorization: Bearer header. Register at ' . app_url('/register') . ' to get one.',
         ],
         'capabilities' => ['tools' => array_map(fn($t) => ['name' => $t['name'], 'description' => $t['description']], mcp_tools())],
         'documentation' => app_url('/docs'),
@@ -74,15 +77,15 @@ if ($path === '/.well-known/agent-skills') {
 }
 
 if ($path === '/.well-known/agent-skills/publish-notes/SKILL.md') {
-    text_response(strtr(file_get_contents(__DIR__ . '/skills/publish-notes/SKILL.md'), ['{{URL}}' => app_url()]), 'text/markdown; charset=utf-8');
-}
-
-if ($path === '/robots.txt') { // served via PHP: Herd's nginx 404s static root files
-    text_response(file_get_contents(__DIR__ . '/views/robots.txt'));
+    text_response(strtr(file_get_contents(__DIR__ . '/../skills/publish-notes/SKILL.md'), ['{{URL}}' => app_url()]), 'text/markdown; charset=utf-8');
 }
 
 if ($path === '/llms.txt') {
-    text_response(strtr(file_get_contents(__DIR__ . '/views/llms.txt'), ['{{URL}}' => app_url()]));
+    text_response(strtr(file_get_contents(__DIR__ . '/../views/llms.txt'), ['{{URL}}' => app_url()]));
+}
+
+if ($path === '/robots.txt') { // static file exists in public/; kept as fallback for local Herd quirks
+    text_response(file_get_contents(__DIR__ . '/robots.txt'));
 }
 
 // ---- Pages ----
@@ -90,31 +93,81 @@ if ($path === '/' || $path === '/docs') {
     send_discovery_links();
     $page = $path === '/' ? 'home' : 'docs';
     if (wants_markdown()) {
-        text_response(strtr(file_get_contents(__DIR__ . "/views/{$page}.md"), ['{{URL}}' => app_url()]), 'text/markdown; charset=utf-8');
+        text_response(strtr(file_get_contents(__DIR__ . "/../views/{$page}.md"), ['{{URL}}' => app_url()]), 'text/markdown; charset=utf-8');
     }
     render($page, ['title' => $path === '/' ? null : 'Docs']);
 }
 
-// ---- Auth ----
+// ---- Registration ----
+if ($path === '/register') {
+    if (current_user()) {
+        redirect('/dashboard');
+    }
+    if ($method === 'POST') {
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        $error = register_user($_POST['username'] ?? '', $email, $_POST['password'] ?? '');
+        if ($error === 'MAIL_FAILED') {
+            render('verify', ['title' => 'Verify your email', 'email' => $email, 'error' => 'Your account was created, but we could not send the email. Use "Resend code" in a minute.', 'notice' => null]);
+        }
+        if ($error) {
+            render('register', ['title' => 'Register', 'error' => $error, 'old' => $_POST]);
+        }
+        render('verify', ['title' => 'Verify your email', 'email' => $email, 'error' => null, 'notice' => 'We sent a 6-digit code to your email.']);
+    }
+    render('register', ['title' => 'Register', 'error' => null, 'old' => []]);
+}
+
+// ---- Email verification (also completes OTP sign-in) ----
+if ($path === '/verify' && $method === 'POST') {
+    $email = strtolower(trim($_POST['email'] ?? ''));
+    if (isset($_POST['resend'])) {
+        $error = send_otp($email, 'verify');
+        render('verify', ['title' => 'Verify your email', 'email' => $email, 'error' => $error, 'notice' => $error ? null : 'A new code is on its way.']);
+    }
+    $result = otp_verify($email, $_POST['code'] ?? '');
+    if (is_string($result)) {
+        render('verify', ['title' => 'Verify your email', 'email' => $email, 'error' => $result, 'notice' => null]);
+    }
+    // First verification: mint an API token automatically and show it once
+    $stmt = db()->prepare('SELECT COUNT(*) FROM api_tokens WHERE user_id = ?');
+    $stmt->execute([$result['id']]);
+    if ((int) $stmt->fetchColumn() === 0) {
+        $token = create_api_token((int) $result['id'], 'default');
+        render('token_created', ['title' => 'Your API token', 'token' => $token, 'first' => true]);
+    }
+    redirect('/dashboard');
+}
+
+// ---- Login (password OR email OTP) ----
 if ($path === '/login') {
     if (current_user()) {
         redirect('/dashboard');
     }
     if ($method === 'POST') {
-        $email = $_POST['email'] ?? '';
-        $error = login_send_code($email);
-        render('login', ['title' => 'Sign in', 'step' => $error ? 'email' : 'code', 'email' => $email, 'error' => $error]);
+        if (($_POST['mode'] ?? '') === 'password') {
+            $result = password_login($_POST['identifier'] ?? '', $_POST['password'] ?? '');
+            if ($result === 'unverified') {
+                render('verify', ['title' => 'Verify your email', 'email' => strtolower(trim($_POST['identifier'] ?? '')), 'error' => null, 'notice' => 'Your email is not verified yet — we just sent you a new code.']);
+            }
+            if (is_string($result)) {
+                render('login', ['title' => 'Sign in', 'tab' => 'password', 'step' => 'start', 'email' => '', 'identifier' => $_POST['identifier'] ?? '', 'error' => $result]);
+            }
+            redirect('/dashboard');
+        }
+        // OTP mode: send a code
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        $error = send_otp($email, 'login');
+        render('login', ['title' => 'Sign in', 'tab' => 'otp', 'step' => $error ? 'start' : 'code', 'email' => $email, 'identifier' => '', 'error' => $error]);
     }
-    render('login', ['title' => 'Sign in', 'step' => 'email', 'email' => '', 'error' => null]);
+    render('login', ['title' => 'Sign in', 'tab' => 'password', 'step' => 'start', 'email' => '', 'identifier' => '', 'error' => null]);
 }
 
 if ($path === '/login/verify' && $method === 'POST') {
-    $email = $_POST['email'] ?? '';
-    $result = login_verify($email, $_POST['code'] ?? '');
+    $email = strtolower(trim($_POST['email'] ?? ''));
+    $result = otp_verify($email, $_POST['code'] ?? '');
     if (is_string($result)) {
-        render('login', ['title' => 'Sign in', 'step' => 'code', 'email' => $email, 'error' => $result]);
+        render('login', ['title' => 'Sign in', 'tab' => 'otp', 'step' => 'code', 'email' => $email, 'identifier' => '', 'error' => $result]);
     }
-    // First login: mint an API token automatically and show it once
     $stmt = db()->prepare('SELECT COUNT(*) FROM api_tokens WHERE user_id = ?');
     $stmt->execute([$result['id']]);
     if ((int) $stmt->fetchColumn() === 0) {
@@ -136,7 +189,34 @@ if ($path === '/dashboard') {
     $notes = list_notes((int) $user['id'], 200);
     $stmt = db()->prepare('SELECT id, name, prefix, last_used_at, created_at FROM api_tokens WHERE user_id = ? AND revoked_at IS NULL ORDER BY id');
     $stmt->execute([$user['id']]);
-    render('dashboard', ['title' => 'Dashboard', 'user' => $user, 'notes' => $notes, 'tokens' => $stmt->fetchAll()]);
+    render('dashboard', [
+        'title' => 'Dashboard',
+        'user' => $user,
+        'notes' => $notes,
+        'tokens' => $stmt->fetchAll(),
+        'settings_error' => null,
+        'settings_saved' => isset($_GET['saved']),
+    ]);
+}
+
+if ($path === '/settings' && $method === 'POST') {
+    $user = require_login();
+    csrf_check();
+    $error = update_account($user, $_POST['username'] ?? '', $_POST['new_password'] ?? '', $_POST['current_password'] ?? '');
+    if ($error === null) {
+        redirect('/dashboard?saved=1');
+    }
+    $notes = list_notes((int) $user['id'], 200);
+    $stmt = db()->prepare('SELECT id, name, prefix, last_used_at, created_at FROM api_tokens WHERE user_id = ? AND revoked_at IS NULL ORDER BY id');
+    $stmt->execute([$user['id']]);
+    render('dashboard', [
+        'title' => 'Dashboard',
+        'user' => $user,
+        'notes' => $notes,
+        'tokens' => $stmt->fetchAll(),
+        'settings_error' => $error,
+        'settings_saved' => false,
+    ]);
 }
 
 if ($path === '/notes/delete' && $method === 'POST') {
@@ -176,7 +256,7 @@ if ($path === '/admin') {
         'SELECT u.*, COUNT(n.id) AS note_count FROM users u LEFT JOIN notes n ON n.user_id = u.id
          GROUP BY u.id ORDER BY u.created_at DESC'
     )->fetchAll();
-    render('admin/users', ['title' => 'Admin', 'users' => $users]);
+    render('admin/users', ['title' => 'Admin', 'users' => $users, 'export_error' => $_GET['export_error'] ?? null]);
 }
 
 if (preg_match('#^/admin/user/(\d+)$#', $path, $m)) {
@@ -212,7 +292,14 @@ if ($path === '/admin/note/delete' && $method === 'POST') {
     require_admin();
     csrf_check();
     db()->prepare('DELETE FROM notes WHERE slug = ?')->execute([$_POST['slug'] ?? '']);
-    redirect($_POST['back'] ?? '/admin');
+    $back = $_POST['back'] ?? '/admin';
+    redirect(str_starts_with($back, '/') && !str_starts_with($back, '//') ? $back : '/admin');
+}
+
+if ($path === '/admin/export' && $method === 'POST') {
+    require_admin();
+    csrf_check();
+    admin_db_export(); // streams .sql, or redirects to /admin with an error
 }
 
 // ---- 404 ----

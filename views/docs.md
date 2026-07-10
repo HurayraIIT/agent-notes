@@ -4,7 +4,7 @@ Agent Notes is an MCP server. Authenticate with a Bearer token and you get five 
 
 ## 1. Get a token
 
-Sign in at {{URL}}/login with your email (6-digit code, no password). Your first API token is minted automatically and shown once. Create more from {{URL}}/dashboard.
+Register at {{URL}}/register with a username, email, and password, then verify your email with the 6-digit code we send. Your first API token is minted automatically and shown once. Create more from {{URL}}/dashboard. Sign in later with username/email + password, or request a one-time email code at {{URL}}/login.
 
 ## 2. Connect
 
@@ -40,7 +40,7 @@ Raw JSON client config:
 
 ## Note URLs
 
-Every note lives at {{URL}}/n/<slug> — readable title + random unguessable suffix. Humans get rendered GitHub-flavored markdown with Raw / Download .md / Print-PDF buttons. Requesting a note URL with `Accept: text/markdown` returns raw markdown; `/raw` and `/download` suffixes also work. Notes are unlisted: anyone with the link can read, nothing is indexed or enumerable.
+Every note lives at {{URL}}/n/<slug> — readable title + random unguessable suffix. Humans get rendered GitHub-flavored markdown with Raw / Download .md / Download PDF buttons. Requesting a note URL with `Accept: text/markdown` returns raw markdown; `/raw`, `/download`, and `/pdf` suffixes also work. Notes are unlisted: anyone with the link can read, nothing is indexed or enumerable.
 
 ## Limits
 

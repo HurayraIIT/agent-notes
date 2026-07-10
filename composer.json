@@ -5,7 +5,8 @@
     "require": {
         "php": ">=8.2",
         "league/commonmark": "^2.6",
-        "phpmailer/phpmailer": "^6.9"
+        "phpmailer/phpmailer": "^6.9",
+        "dompdf/dompdf": "^3.1"
     },
     "config": {
         "optimize-autoloader": true
