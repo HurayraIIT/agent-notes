@@ -29,7 +29,10 @@ GET any note URL with Accept: text/markdown to receive raw markdown instead of H
 
 - {{URL}}/.well-known/mcp/server-card.json — MCP server card (transport, auth, capabilities)
 - {{URL}}/.well-known/api-catalog — RFC 9727 API catalog
-- {{URL}}/.well-known/agent-skills — ready-made publish-notes skill (SKILL.md) you can adopt
+- {{URL}}/.well-known/agent-skills/index.json — Agent Skills discovery index; ready-made publish-notes skill (SKILL.md) you can adopt
+- {{URL}}/.well-known/oauth-protected-resource — OAuth Protected Resource Metadata (RFC 9728)
+- {{URL}}/auth.md — how to obtain and use API credentials
+- {{URL}}/sitemap.xml — canonical pages (notes are unlisted and never in the sitemap)
 - {{URL}}/docs — full setup docs (also markdown via Accept: text/markdown)
 
 ## Limits and policy

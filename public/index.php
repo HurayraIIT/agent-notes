@@ -39,7 +39,10 @@ if (preg_match('#^/n/([A-Za-z0-9-]+)(/raw|/download|/pdf)?$#', $path, $m)) {
 // ---- Agent discovery ----
 if ($path === '/.well-known/mcp/server-card.json') {
     json_response([
-        'name' => 'agent-notes',
+        'serverInfo' => [
+            'name' => 'agent-notes',
+            'version' => '1.0.0',
+        ],
         'title' => env('APP_NAME', 'Agent Notes'),
         'description' => 'Note-publishing service for AI agents. Publish markdown over MCP, get back a clean unlisted URL that renders for humans.',
         'url' => app_url('/mcp'),
@@ -60,18 +63,77 @@ if ($path === '/.well-known/api-catalog') {
             'anchor' => app_url('/'),
             'service-desc' => [['href' => app_url('/.well-known/mcp/server-card.json'), 'type' => 'application/json', 'title' => 'MCP Server Card']],
             'service-doc' => [['href' => app_url('/docs'), 'type' => 'text/html', 'title' => 'Agent Setup Docs']],
-            'service-meta' => [['href' => app_url('/llms.txt'), 'type' => 'text/plain', 'title' => 'LLM usage guide']],
+            'service-meta' => [
+                ['href' => app_url('/llms.txt'), 'type' => 'text/plain', 'title' => 'LLM usage guide'],
+                ['href' => app_url('/auth.md'), 'type' => 'text/markdown', 'title' => 'Agent authentication guide'],
+                ['href' => app_url('/.well-known/oauth-protected-resource'), 'type' => 'application/json', 'title' => 'OAuth Protected Resource Metadata (RFC 9728)'],
+                ['href' => app_url('/.well-known/agent-skills/index.json'), 'type' => 'application/json', 'title' => 'Agent Skills discovery index'],
+                ['href' => app_url('/sitemap.xml'), 'type' => 'application/xml', 'title' => 'Sitemap'],
+            ],
             'item' => [['href' => app_url('/mcp'), 'title' => 'MCP endpoint (Streamable HTTP, JSON-RPC 2.0)']],
         ]],
     ]);
 }
 
-if ($path === '/.well-known/agent-skills') {
+if ($path === '/.well-known/openid-configuration') {
     json_response([
+        'issuer' => app_url(),
+        'authorization_endpoint' => app_url('/login'),
+        'token_endpoint' => app_url('/tokens/create'),
+        'registration_endpoint' => app_url('/register'),
+        'jwks_uri' => app_url('/.well-known/jwks.json'),
+        'response_types_supported' => ['token'],
+        'grant_types_supported' => ['implicit'],
+        'subject_types_supported' => ['public'],
+        'id_token_signing_alg_values_supported' => ['none'],
+        'token_endpoint_auth_methods_supported' => ['client_secret_post'],
+        'scopes_supported' => ['openid', 'notes:read', 'notes:write'],
+        'service_documentation' => app_url('/docs'),
+        'x_bearer_token_info' => [
+            'description' => 'This service uses manually-provisioned Bearer API tokens. Register at ' . app_url('/register') . ', then create tokens on your dashboard.',
+            'token_prefix' => 'an_',
+            'header' => 'Authorization: Bearer <token>',
+        ],
+    ]);
+}
+
+if ($path === '/.well-known/oauth-authorization-server') {
+    json_response([
+        'issuer' => app_url(),
+        'authorization_endpoint' => app_url('/login'),
+        'token_endpoint' => app_url('/tokens/create'),
+        'registration_endpoint' => app_url('/register'),
+        'jwks_uri' => app_url('/.well-known/jwks.json'),
+        'response_types_supported' => ['token'],
+        'grant_types_supported' => ['implicit'],
+        'token_endpoint_auth_methods_supported' => ['client_secret_post'],
+        'scopes_supported' => ['notes:read', 'notes:write'],
+        'service_documentation' => app_url('/docs'),
+        'agent_auth' => [ // auth.md (workos.com/auth-md) agent registration block
+            'register_uri' => app_url('/register'),
+            'instructions_uri' => app_url('/auth.md'),
+            'identity_types_supported' => ['email'],
+            'credential_types_supported' => ['bearer_token'],
+            'revocation_uri' => app_url('/dashboard'),
+        ],
+    ]);
+}
+
+if ($path === '/.well-known/jwks.json') {
+    json_response(['keys' => []]);
+}
+
+if ($path === '/.well-known/agent-skills' || $path === '/.well-known/agent-skills/index.json') {
+    // digest is computed over the exact bytes the SKILL.md route serves (post-{{URL}} substitution)
+    $skillMd = strtr(file_get_contents(__DIR__ . '/../skills/publish-notes/SKILL.md'), ['{{URL}}' => app_url()]);
+    json_response([
+        '$schema' => 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
         'skills' => [[
             'name' => 'publish-notes',
+            'type' => 'skill-md',
             'description' => 'Publish markdown notes to shareable URLs via the Agent Notes MCP server.',
             'url' => app_url('/.well-known/agent-skills/publish-notes/SKILL.md'),
+            'digest' => 'sha256:' . hash('sha256', $skillMd),
         ]],
     ]);
 }
@@ -80,8 +142,21 @@ if ($path === '/.well-known/agent-skills/publish-notes/SKILL.md') {
     text_response(strtr(file_get_contents(__DIR__ . '/../skills/publish-notes/SKILL.md'), ['{{URL}}' => app_url()]), 'text/markdown; charset=utf-8');
 }
 
+if ($path === '/.well-known/oauth-protected-resource') {
+    json_response([
+        'resource' => app_url('/'),
+        'authorization_servers' => [app_url('/')],
+        'scopes_supported' => ['notes:read', 'notes:write'],
+        'bearer_methods_supported' => ['header'],
+    ]);
+}
+
 if ($path === '/llms.txt') {
     text_response(strtr(file_get_contents(__DIR__ . '/../views/llms.txt'), ['{{URL}}' => app_url()]));
+}
+
+if ($path === '/auth.md') {
+    text_response(strtr(file_get_contents(__DIR__ . '/../views/auth.md'), ['{{URL}}' => app_url()]), 'text/markdown; charset=utf-8');
 }
 
 if ($path === '/sitemap.xml') {
@@ -90,6 +165,7 @@ if ($path === '/sitemap.xml') {
         ['loc' => app_url('/docs'), 'changefreq' => 'monthly', 'priority' => '0.8'],
         ['loc' => app_url('/register'), 'changefreq' => 'monthly', 'priority' => '0.5'],
         ['loc' => app_url('/login'), 'changefreq' => 'monthly', 'priority' => '0.5'],
+        ['loc' => app_url('/auth.md'), 'changefreq' => 'monthly', 'priority' => '0.3'],
     ];
     $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
          . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
@@ -104,8 +180,8 @@ if ($path === '/sitemap.xml') {
     text_response($xml, 'application/xml; charset=utf-8');
 }
 
-if ($path === '/robots.txt') { // static file exists in public/; kept as fallback for local Herd quirks
-    $body = file_get_contents(__DIR__ . '/robots.txt');
+if ($path === '/robots.txt') { // PHP-served: the Sitemap line needs the dynamic site URL
+    $body = file_get_contents(__DIR__ . '/../views/robots.txt');
     $body .= "\nSitemap: " . app_url('/sitemap.xml') . "\n";
     text_response($body);
 }
@@ -269,6 +345,22 @@ if ($path === '/account/delete' && $method === 'POST') {
     logout();
     db()->prepare('DELETE FROM users WHERE id = ?')->execute([$user['id']]); // cascades to notes/tokens/sessions
     redirect('/');
+}
+
+// ---- WebMCP (browser-session variant of the MCP tools) ----
+if ($path === '/webmcp' && $method === 'POST') {
+    $user = current_user();
+    if (!$user) {
+        json_response(['error' => ['message' => 'Sign in at ' . app_url('/login') . ' to use these tools.']], 401);
+    }
+    $request = json_decode(file_get_contents('php://input'), true) ?? [];
+    if (!hash_equals(csrf_token(), (string) ($request['_csrf'] ?? ''))) {
+        json_response(['error' => ['message' => 'CSRF token mismatch — reload the page.']], 419);
+    }
+    if (!is_array($request['arguments'] ?? null)) {
+        $request['arguments'] = [];
+    }
+    mcp_tool_call($request['id'] ?? null, $request['name'] ?? '', $request['arguments'], (int) $user['id']);
 }
 
 // ---- Admin ----

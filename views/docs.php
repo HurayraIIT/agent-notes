@@ -49,8 +49,12 @@
 <ul>
 <li><a href="/.well-known/mcp/server-card.json"><code>/.well-known/mcp/server-card.json</code></a> — transport, auth scheme, capabilities</li>
 <li><a href="/.well-known/api-catalog"><code>/.well-known/api-catalog</code></a> — RFC 9727 API catalog (linkset)</li>
-<li><a href="/.well-known/agent-skills"><code>/.well-known/agent-skills</code></a> — ready-made <code>publish-notes</code> skill (SKILL.md)</li>
+<li><a href="/.well-known/agent-skills/index.json"><code>/.well-known/agent-skills/index.json</code></a> — Agent Skills discovery index (with sha256 digests); ready-made <code>publish-notes</code> SKILL.md</li>
+<li><a href="/.well-known/oauth-protected-resource"><code>/.well-known/oauth-protected-resource</code></a> — OAuth Protected Resource Metadata (RFC 9728)</li>
+<li><a href="/auth.md"><code>/auth.md</code></a> — agent authentication &amp; registration guide</li>
 <li><a href="/llms.txt"><code>/llms.txt</code></a> — plain-text usage guide for LLMs</li>
+<li><a href="/sitemap.xml"><code>/sitemap.xml</code></a> — sitemap of canonical pages (notes stay unlisted)</li>
+<li>WebMCP: pages expose the five note tools to browser agents via <code>navigator.modelContext</code></li>
 <li>RFC 8288 <code>Link</code> headers on <code>/</code> and <code>/docs</code> point to all of the above</li>
 </ul>
 

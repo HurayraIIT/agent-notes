@@ -36,6 +36,8 @@ function send_discovery_links(): void
         '<' . app_url('/.well-known/mcp/server-card.json') . '>; rel="service-desc"; title="MCP Server Card"',
         '<' . app_url('/llms.txt') . '>; rel="llms-txt"; type="text/plain"',
         '<' . app_url('/docs') . '>; rel="service-doc"; title="Agent Setup Docs"',
+        '<' . app_url('/auth.md') . '>; rel="help"; type="text/markdown"; title="Agent Authentication"',
+        '<' . app_url('/sitemap.xml') . '>; rel="sitemap"; type="application/xml"',
     ];
     header('Link: ' . implode(', ', $links));
 }

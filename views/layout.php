@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e(isset($title) && $title ? $title . ' · ' : '') ?><?= e(env('APP_NAME', 'Agent Notes')) ?></title>
+<meta name="description" content="<?= e(env('APP_NAME', 'Agent Notes')) ?> — a publishing pipe for AI agents.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "<?= e(env('APP_NAME', 'Agent Notes')) ?>",
+  "url": "<?= e(app_url('/')) ?>",
+  "description": "<?= e(env('APP_NAME', 'Agent Notes')) ?> — a publishing pipe for AI agents."
+}
+</script>
 <script>
 // apply theme before paint (no flash)
 if (localStorage.theme === 'dark' || (!('theme' in localStorage) && matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -75,5 +85,31 @@ function copyCmd(btn) {
         <span class="flex gap-4"><a href="/llms.txt" class="hover:text-slate-900 dark:hover:text-white">llms.txt</a><a href="/.well-known/mcp/server-card.json" class="hover:text-slate-900 dark:hover:text-white">MCP card</a></span>
     </div>
 </footer>
+<script>
+// WebMCP: expose the note tools to browser-based agents (no-op where unsupported)
+if (navigator.modelContext) {
+    const csrfToken = <?= json_encode(csrf_token()) ?>;
+    const tools = <?= json_encode(mcp_tools()) ?>.map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+        async execute(args) {
+            const res = await fetch('/webmcp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ _csrf: csrfToken, name: tool.name, arguments: args, id: 1 })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message || 'Tool call failed');
+            return data.result.content[0].text;
+        }
+    }));
+    if (navigator.modelContext.registerTool) {
+        tools.forEach(t => navigator.modelContext.registerTool(t));
+    } else if (navigator.modelContext.provideContext) {
+        navigator.modelContext.provideContext({ tools });
+    }
+}
+</script>
 </body>
 </html>

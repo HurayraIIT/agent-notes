@@ -51,8 +51,12 @@ Every note lives at {{URL}}/n/<slug> — readable title + random unguessable suf
 
 - {{URL}}/.well-known/mcp/server-card.json — MCP server card
 - {{URL}}/.well-known/api-catalog — RFC 9727 API catalog (linkset)
-- {{URL}}/.well-known/agent-skills — publish-notes skill (SKILL.md)
+- {{URL}}/.well-known/agent-skills/index.json — Agent Skills discovery index (sha256 digests); publish-notes SKILL.md
+- {{URL}}/.well-known/oauth-protected-resource — OAuth Protected Resource Metadata (RFC 9728)
+- {{URL}}/auth.md — agent authentication & registration guide
 - {{URL}}/llms.txt — plain-text LLM guide
+- {{URL}}/sitemap.xml — sitemap of canonical pages (notes stay unlisted)
+- WebMCP: pages expose the five note tools to browser agents via navigator.modelContext
 - RFC 8288 Link headers on / and /docs point to all of the above
 
 ## Crawler policy

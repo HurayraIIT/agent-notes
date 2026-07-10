@@ -1,0 +1,55 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+Agent Notes: a note-publishing MCP server for AI agents. Agents authenticate with a Bearer token at `POST /mcp` (JSON-RPC 2.0, stateless Streamable HTTP) and publish markdown notes that render at unlisted `/n/<slug>` URLs. Vanilla PHP 8.2+ (no framework), Tailwind Play CDN (no build step), MySQL. Composer deps: league/commonmark, phpmailer, dompdf only.
+
+## Commands
+
+```bash
+composer install
+
+# Local DB (Herd MySQL: root/password on 127.0.0.1) — schema changes are applied by drop & re-import, there are no migrations
+mysql -h 127.0.0.1 -u root -ppassword -e "DROP DATABASE IF EXISTS agent_notes; CREATE DATABASE agent_notes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+mysql -h 127.0.0.1 -u root -ppassword agent_notes < schema.sql
+
+# Lint everything
+for f in public/index.php src/*.php views/*.php views/admin/*.php; do php -l "$f"; done
+
+# Run helper code against the app (bootstrap gives you db(), create_api_token(), etc.)
+php -r 'require "src/bootstrap.php"; echo create_api_token(1, "test");'
+```
+
+Served by Laravel Herd at `http://agent-notes.test` (docroot is `public/`, auto-detected via BasicWithPublicValetDriver — do NOT add an index.php at repo root or Herd switches drivers).
+
+There is no test framework. Testing is E2E: curl/python against the live local site. A comprehensive 54-check suite pattern exists in past session scratchpads (`v2_test.py`) — register → verify → login flows, full MCP tool lifecycle, rate limit (expect exactly 60×200 then 429), PDF magic bytes, admin export, discovery endpoints. OTP codes are stored hashed, so tests seed a known code directly:
+
+```bash
+php -r 'require "src/bootstrap.php"; db()->prepare("INSERT INTO login_codes (email, code_hash, purpose, expires_at) VALUES (?, ?, \"verify\", NOW() + INTERVAL 10 MINUTE)")->execute(["x@y.com", hash("sha256", "123456")]);'
+```
+
+Always clean up test rows afterward (users/notes/tokens/sessions/login_codes/rate_limits).
+
+## Architecture
+
+Single front controller `public/index.php` routes on `REQUEST_URI` via a flat if-chain; every handler ends in an `exit`-ing helper (`render()`, `json_response()`, `text_response()`, `redirect()`). `src/bootstrap.php` loads a hand-rolled `.env` parser, defines `db()` (PDO singleton), `e()`, `view()`/`render()`, `cmd_block()`, and requires all other `src/*.php` files — they are plain function files, no classes/autoloading.
+
+- `src/mcp.php` — the core product. `mcp_handle()` does bearer auth → rate limit → JSON-RPC dispatch (`initialize`, `ping`, `tools/list`, `tools/call`, notifications → 202). Tool results are JSON-encoded into MCP text content; tool failures use `isError: true`, protocol failures use JSON-RPC errors.
+- `src/auth.php` — registration, OTP verify, password login, DB-backed sessions. **Invariant: sessions are only ever created for verified users**, so `require_login()` implies verified and no separate gating exists anywhere. OTP success implicitly verifies the email. CSRF tokens are `hash_hmac('sha256', 'csrf', session cookie)` — no PHP sessions anywhere.
+- `src/notes.php` — CRUD shared by MCP and dashboard; slugs are `slugify(title)-<10 base62 chars>` and never change on update.
+- Everything secret is stored hashed (sha256 for API tokens/session tokens/OTP codes, bcrypt for passwords); plaintext tokens exist only in the response that mints them.
+- Views (`views/*.php`) receive variables via `extract()` — IDE "undefined variable" diagnostics in view files are false positives. `views/layout.php` wraps pages; `views/note.php` is standalone (own `<html>`). Dark mode is Tailwind `darkMode: 'class'` + localStorage toggle; both layout and note.php duplicate the theme script.
+- `views/home.md`, `views/docs.md`, `views/llms.txt`, `skills/publish-notes/SKILL.md` are `{{URL}}`-templated markdown served by PHP routes (also via `Accept: text/markdown` content negotiation on `/` and `/docs`). Keep them in sync with their HTML counterparts when features change.
+- Email (`src/mail.php`): PHPMailer tries `MAIL_PRIMARY_*` env block, falls back to `MAIL_FAILOVER_*`. Locally, Herd intercepts SMTP, so sends "succeed" with placeholder creds — check Herd's mail panel.
+- Rate limiting (`src/ratelimit.php`): fixed-window counters in the `rate_limits` table, keyed string + window; used for MCP (60/min/token), OTP sends, login/registration attempts.
+
+## Gotchas
+
+- Herd's **global** nginx template (`~/Library/Application Support/Herd/config/nginx/herd.conf`) has a bare `location = /robots.txt` block: locally, `/robots.txt` always returns HTTP 404 with the correct body, no matter how it's served. Unfixable from app code; fine on live nginx. `robots.txt` and `llms.txt` are `{{URL}}`-templated in `views/` and PHP-served (robots gains a dynamic `Sitemap:` line) — do not put static copies in `public/`, they'd shadow the routes.
+- Discovery surface (all PHP routes in public/index.php): sitemap.xml, auth.md, `.well-known/` mcp/server-card.json, api-catalog, agent-skills(+/index.json — sha256 digest computed at request time from the served SKILL.md bytes), oauth-protected-resource, oauth-authorization-server, openid-configuration, jwks.json. The OAuth metadata describes out-of-band bearer tokens, not a real OAuth server. WebMCP: layout.php exposes the 5 note tools via `navigator.modelContext` calling `POST /webmcp` (session + CSRF).
+- `app_url()` prefers `APP_URL` env, else derives scheme+host from the request — never hardcode the domain in rendered output.
+- Commands shown in the UI must fully wrap (`whitespace-pre-wrap break-all` via `cmd_block()`) — no horizontal scrolling, per product requirement. Copy buttons use `copyText()` in layout.php, which has a `document.execCommand` fallback because `http://agent-notes.test` is not a secure context.
+- The seeded admin (`hurayraiit+admin@gmail.com`, users.id=1) has no password/username; it signs in via email OTP.
+- `.env` is git-ignored and holds real SMTP creds; `.env.example` is the template. Never commit `.env`.

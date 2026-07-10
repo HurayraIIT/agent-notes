@@ -62,7 +62,12 @@ function e(?string $value): string
 
 function app_url(string $path = ''): string
 {
-    return rtrim(env('APP_URL', 'http://agent-notes.test'), '/') . $path;
+    $base = env('APP_URL');
+    if (!$base && isset($_SERVER['HTTP_HOST'])) { // derive from the request when APP_URL is unset
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $base = $scheme . '://' . $_SERVER['HTTP_HOST'];
+    }
+    return rtrim($base ?: 'http://agent-notes.test', '/') . $path;
 }
 
 function random_token(int $bytes = 24): string
