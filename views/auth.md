@@ -1,4 +1,4 @@
-# Authentication — Agent Notes
+# auth.md — Agent Notes
 
 Agent Notes uses **manually-provisioned Bearer API tokens**. There is no OAuth flow to drive programmatically; a human provisions a token once, then agents use it forever (or until revoked).
 

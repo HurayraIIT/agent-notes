@@ -110,8 +110,10 @@ if ($path === '/.well-known/oauth-authorization-server') {
         'scopes_supported' => ['notes:read', 'notes:write'],
         'service_documentation' => app_url('/docs'),
         'agent_auth' => [ // auth.md (workos.com/auth-md) agent registration block
+            'skill' => app_url('/auth.md'),
             'register_uri' => app_url('/register'),
             'instructions_uri' => app_url('/auth.md'),
+            'methods_supported' => ['manual_provisioning'], // human registers, mints bearer token, hands it to the agent
             'identity_types_supported' => ['email'],
             'credential_types_supported' => ['bearer_token'],
             'revocation_uri' => app_url('/dashboard'),
@@ -145,7 +147,7 @@ if ($path === '/.well-known/agent-skills/publish-notes/SKILL.md') {
 if ($path === '/.well-known/oauth-protected-resource') {
     json_response([
         'resource' => app_url('/'),
-        'authorization_servers' => [app_url('/')],
+        'authorization_servers' => [app_url()], // must byte-match the issuer in oauth-authorization-server
         'scopes_supported' => ['notes:read', 'notes:write'],
         'bearer_methods_supported' => ['header'],
     ]);
