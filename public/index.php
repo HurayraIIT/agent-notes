@@ -31,6 +31,9 @@ if (preg_match('#^/n/([A-Za-z0-9-]+)(/raw|/download|/pdf)?$#', $path, $m)) {
     if ($mode === '/pdf') {
         note_pdf($note);
     }
+    // updated_at = updated_at: a view is not an edit
+    db()->prepare('UPDATE notes SET views = views + 1, updated_at = updated_at WHERE id = ?')->execute([$note['id']]);
+    $note['views']++;
     http_response_code(200);
     echo view('note', ['note' => $note, 'html' => markdown_to_html($note['content'])]);
     exit;
@@ -369,7 +372,8 @@ if ($path === '/webmcp' && $method === 'POST') {
 if ($path === '/admin') {
     require_admin();
     $users = db()->query(
-        'SELECT u.*, COUNT(n.id) AS note_count FROM users u LEFT JOIN notes n ON n.user_id = u.id
+        'SELECT u.*, COUNT(n.id) AS note_count, COALESCE(SUM(n.views), 0) AS total_views
+         FROM users u LEFT JOIN notes n ON n.user_id = u.id
          GROUP BY u.id ORDER BY u.created_at DESC'
     )->fetchAll();
     render('admin/users', ['title' => 'Admin', 'users' => $users, 'export_error' => $_GET['export_error'] ?? null]);

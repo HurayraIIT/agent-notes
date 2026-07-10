@@ -42,7 +42,7 @@ function toggleTheme() {
 <main class="max-w-3xl mx-auto px-4 py-6 sm:py-10">
     <article class="print-plain bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm px-5 py-8 sm:px-12 sm:py-10">
         <h1 class="text-2xl sm:text-3xl font-bold tracking-tight mb-2"><?= e($note['title']) ?></h1>
-        <p class="text-sm text-slate-400 dark:text-slate-500 mb-8 pb-6 border-b border-slate-100 dark:border-slate-800">Updated <?= e($note['updated_at']) ?></p>
+        <p class="text-sm text-slate-400 dark:text-slate-500 mb-8 pb-6 border-b border-slate-100 dark:border-slate-800">Updated <?= e($note['updated_at']) ?><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
         <div class="prose prose-slate dark:prose-invert max-w-none prose-pre:bg-slate-900 prose-pre:text-slate-100 dark:prose-pre:bg-black/50">
 <?= $html ?>
         </div>

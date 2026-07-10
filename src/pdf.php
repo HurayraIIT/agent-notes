@@ -7,6 +7,31 @@ use Dompdf\Dompdf;
 /** Streams a note as a PDF attachment. */
 function note_pdf(array $note): never
 {
+    if (rate_limited('pdf-ip:' . client_ip(), 20)) {
+        header('Retry-After: 60');
+        text_response('Too many PDF requests — try again in a minute.', status: 429);
+    }
+
+    $stmt = db()->prepare('SELECT pdf_cache FROM notes WHERE id = ?');
+    $stmt->execute([$note['id']]);
+    $pdf = $stmt->fetchColumn();
+
+    if (!$pdf) {
+        $pdf = generate_pdf($note);
+        // updated_at = updated_at: a cache write is not an edit
+        db()->prepare('UPDATE notes SET pdf_cache = ?, updated_at = updated_at WHERE id = ?')
+            ->execute([$pdf, $note['id']]);
+    }
+
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $note['slug'] . '.pdf"');
+    header('X-Robots-Tag: noindex, nofollow');
+    echo $pdf;
+    exit;
+}
+
+function generate_pdf(array $note): string
+{
     $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 11pt; color: #1e293b; line-height: 1.55; }
         h1, h2, h3, h4 { color: #0f172a; line-height: 1.25; }
@@ -31,9 +56,5 @@ function note_pdf(array $note): never
     $dompdf->setPaper('A4');
     $dompdf->render();
 
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="' . $note['slug'] . '.pdf"');
-    header('X-Robots-Tag: noindex, nofollow');
-    echo $dompdf->output();
-    exit;
+    return $dompdf->output();
 }

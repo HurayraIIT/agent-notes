@@ -43,7 +43,8 @@ function create_note(int $userId, string $title, string $content): array
 
 function get_note(string $slug, ?int $userId = null): ?array
 {
-    $sql = 'SELECT * FROM notes WHERE slug = ?';
+    // ponytail: explicit columns so the pdf_cache blob never rides along on page views
+    $sql = 'SELECT id, user_id, slug, title, content, size_bytes, views, created_at, updated_at FROM notes WHERE slug = ?';
     $params = [$slug];
     if ($userId !== null) {
         $sql .= ' AND user_id = ?';
@@ -70,11 +71,11 @@ function update_note(int $userId, string $slug, ?string $title, ?string $content
         if ($size > $max) {
             return [null, "content is {$size} bytes; the maximum is {$max} bytes (1 MB)"];
         }
-        db()->prepare('UPDATE notes SET content = ?, size_bytes = ? WHERE id = ?')
+        db()->prepare('UPDATE notes SET content = ?, size_bytes = ?, pdf_cache = NULL WHERE id = ?')
             ->execute([$content, $size, $note['id']]);
     }
     if ($title !== null && trim($title) !== '') {
-        db()->prepare('UPDATE notes SET title = ? WHERE id = ?')
+        db()->prepare('UPDATE notes SET title = ?, pdf_cache = NULL WHERE id = ?')
             ->execute([substr(trim($title), 0, 255), $note['id']]);
     }
     return [get_note($slug, $userId), null];
@@ -85,7 +86,7 @@ function list_notes(int $userId, int $limit = 50, int $offset = 0): array
     $limit = max(1, min($limit, 200));
     $offset = max(0, $offset);
     $stmt = db()->prepare(
-        'SELECT slug, title, size_bytes, created_at, updated_at FROM notes
+        'SELECT slug, title, size_bytes, views, created_at, updated_at FROM notes
          WHERE user_id = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?'
     );
     $stmt->bindValue(1, $userId, PDO::PARAM_INT);

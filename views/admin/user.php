@@ -32,7 +32,7 @@
     <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 px-4 py-3">
         <div class="min-w-0 flex-1 basis-full sm:basis-auto">
             <a href="/n/<?= e($n['slug']) ?>" class="font-medium hover:underline truncate block"><?= e($n['title']) ?></a>
-            <div class="text-xs text-slate-500 dark:text-slate-400">Updated <?= e($n['updated_at']) ?> · <?= number_format((int) $n['size_bytes']) ?> bytes</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">Updated <?= e($n['updated_at']) ?> · <?= number_format((int) $n['size_bytes']) ?> bytes · <?= number_format((int) $n['views']) ?> views</div>
         </div>
         <form method="post" action="/admin/note/delete" onsubmit="return confirm('Delete this note?')">
             <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
