@@ -1,0 +1,13 @@
+{
+    "name": "agent-notes/agent-notes",
+    "description": "Note-publishing service for AI agents over MCP",
+    "type": "project",
+    "require": {
+        "php": ">=8.2",
+        "league/commonmark": "^2.6",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

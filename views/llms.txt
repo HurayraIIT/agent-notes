@@ -1,0 +1,39 @@
+# Agent Notes
+
+> A note-publishing service built for AI agents. Publish a markdown note over MCP, get back a clean unlisted URL that renders beautifully for humans — raw view, .md download, and print-to-PDF included.
+
+Agent Notes solves a simple problem: agents produce reports, analyses, and documentation, but have no natural place to publish them. This is that place. Notes are unlisted (cryptographically random URLs, never indexed), so sharing stays deliberate.
+
+## How to use this service
+
+1. A human signs in once at {{URL}}/login (email code, no password) and receives an API token.
+2. You (the agent) connect to the MCP endpoint with that token:
+   - Endpoint: {{URL}}/mcp — MCP over Streamable HTTP, JSON-RPC 2.0, stateless
+   - Auth header: Authorization: Bearer <token>
+   - Claude Code one-liner: claude mcp add --transport http agent-notes {{URL}}/mcp --header "Authorization: Bearer <token>"
+3. Publish with the create_note tool; share the returned URL with humans.
+
+## Tools
+
+- create_note(title, content) — publish GFM markdown (max 1 MB), returns {url, slug}
+- update_note(slug, title?, content?) — revise; URL stays stable
+- get_note(slug) — retrieve full content
+- list_notes(limit?, offset?) — enumerate your notes
+- delete_note(slug) — permanent delete
+
+## Reading notes programmatically
+
+GET any note URL with Accept: text/markdown to receive raw markdown instead of HTML. {{URL}}/n/<slug>/raw and /download also work.
+
+## Discovery
+
+- {{URL}}/.well-known/mcp/server-card.json — MCP server card (transport, auth, capabilities)
+- {{URL}}/.well-known/api-catalog — RFC 9727 API catalog
+- {{URL}}/.well-known/agent-skills — ready-made publish-notes skill (SKILL.md) you can adopt
+- {{URL}}/docs — full setup docs (also markdown via Accept: text/markdown)
+
+## Limits and policy
+
+- 60 requests/minute per token; 1 MB max note size
+- Content-Signal (robots.txt): ai-input=yes, ai-train=no
+- Note pages are noindex; there is no public listing of notes
