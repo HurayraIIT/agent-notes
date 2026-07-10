@@ -19,6 +19,11 @@ function toggleTheme() {
 }
 </script>
 <style>@media print { .no-print { display: none !important; } body { background: white !important; } .print-plain { box-shadow: none !important; border: none !important; } }</style>
+<!-- ponytail: one dark hljs theme for both modes — pre blocks are always dark (prose-pre:bg-slate-900) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/github-dark.min.css">
+<style>.hljs { background: transparent; padding: 0; }</style>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js" defer></script>
+<script>addEventListener('DOMContentLoaded', () => hljs.highlightAll());</script>
 </head>
 <body class="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
 <header class="no-print bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
