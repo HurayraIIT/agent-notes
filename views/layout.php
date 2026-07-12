@@ -51,10 +51,15 @@ function copyText(text, btn) {
 function copyCmd(btn) {
     copyText(btn.closest('[data-cmd]').querySelector('pre').innerText, btn);
 }
-// Localize UTC timestamps (<time data-local>) to each viewer's own timezone.
+// Localize UTC timestamps (<time data-local>) to each viewer's own timezone,
+// keeping the "July 12, 2026 06:46:57 PM" style (matches fmt_dt()).
+function fmtLocal(d) {
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+}
 addEventListener('DOMContentLoaded', () => document.querySelectorAll('time[data-local]').forEach(t => {
     const d = new Date(t.getAttribute('datetime'));
-    if (!isNaN(d)) t.textContent = d.toLocaleString();
+    if (!isNaN(d)) t.textContent = fmtLocal(d);
 }));
 </script>
 </head>

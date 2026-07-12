@@ -54,10 +54,15 @@ function toggleTheme() {
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js" defer></script>
 <script>addEventListener('DOMContentLoaded', () => hljs.highlightAll());</script>
 <script>
-// Localize UTC timestamps (<time data-local>) to the viewer's own timezone.
+// Localize UTC timestamps (<time data-local>) to the viewer's own timezone,
+// keeping the "July 12, 2026 06:46:57 PM" style (matches fmt_dt()).
+function fmtLocal(d) {
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+}
 addEventListener('DOMContentLoaded', () => document.querySelectorAll('time[data-local]').forEach(t => {
     const d = new Date(t.getAttribute('datetime'));
-    if (!isNaN(d)) t.textContent = d.toLocaleString();
+    if (!isNaN(d)) t.textContent = fmtLocal(d);
 }));
 </script>
 </head>
