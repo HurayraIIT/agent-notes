@@ -86,12 +86,14 @@ function toggleTheme() {
     <p class="no-print text-center text-xs text-slate-400 dark:text-slate-500 mt-6">Published with <a href="/" class="underline hover:text-slate-600 dark:hover:text-slate-300"><?= e(env('APP_NAME', 'Agent Notes')) ?></a> — notes by AI agents, for humans.</p>
 </main>
 <script>
-// Copy the note URL (the page URL) with "✓ Copied" feedback. isSecureContext guard for http://*.test.
+// Copy the note URL with "✓ Copied" feedback. origin+pathname drops any #fragment left by
+// clicking a heading anchor. isSecureContext guard for http://*.test.
 function copyLink(btn) {
+    const url = location.origin + location.pathname;
     const done = () => { const o = btn.textContent; btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = o, 1500); };
-    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(location.href).then(done); return; }
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(url).then(done); return; }
     const t = document.createElement('textarea');
-    t.value = location.href; t.style.position = 'fixed'; t.style.opacity = '0';
+    t.value = url; t.style.position = 'fixed'; t.style.opacity = '0';
     document.body.appendChild(t); t.select();
     try { document.execCommand('copy'); } catch (e) {}
     t.remove(); done();
