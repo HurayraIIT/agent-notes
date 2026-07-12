@@ -17,7 +17,7 @@
         <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 px-4 py-3">
             <div class="min-w-0 flex-1 basis-full sm:basis-auto">
                 <a href="/n/<?= e($n['slug']) ?>" class="font-medium hover:underline truncate block"><?= e($n['title']) ?></a>
-                <div class="text-xs text-slate-500 dark:text-slate-400">Updated <?= e($n['updated_at']) ?> · <?= number_format((int) $n['size_bytes']) ?> bytes</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">Updated <?= e(fmt_dt($n['updated_at'])) ?> · <?= e(fmt_bytes((int) $n['size_bytes'])) ?></div>
             </div>
             <button onclick="copyText('<?= e(note_url($n['slug'])) ?>', this)"
                     class="text-xs rounded-md border border-slate-300 dark:border-slate-600 px-2.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0">Copy link</button>
@@ -40,7 +40,7 @@
             <div class="min-w-0 flex-1">
                 <span class="font-medium"><?= e($t['name']) ?></span>
                 <code class="text-xs bg-slate-100 dark:bg-slate-800 rounded px-1.5 py-0.5 ml-2"><?= e($t['prefix']) ?>…</code>
-                <div class="text-xs text-slate-500 dark:text-slate-400">Created <?= e($t['created_at']) ?> · Last used <?= e($t['last_used_at'] ?? 'never') ?></div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">Created <?= e(fmt_dt($t['created_at'])) ?> · Last used <?= e($t['last_used_at'] ? fmt_dt($t['last_used_at']) : 'never') ?></div>
             </div>
             <form method="post" action="/tokens/revoke" onsubmit="return confirm('Revoke this token? Agents using it will lose access.')">
                 <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">

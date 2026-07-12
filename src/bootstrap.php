@@ -75,6 +75,21 @@ function random_token(int $bytes = 24): string
     return rtrim(strtr(base64_encode(random_bytes($bytes)), '+/', '-_'), '=');
 }
 
+// Human-readable datetime, e.g. "July 12, 2026 07:50:06 AM"; passes through non-datetime strings unchanged.
+function fmt_dt(?string $v): string
+{
+    $ts = $v ? strtotime($v) : false;
+    return $ts ? date('F j, Y h:i:s A', $ts) : (string) $v;
+}
+
+// Human-readable byte size, e.g. "512 B", "2 KB", "3 MB".
+function fmt_bytes(int $n): string
+{
+    if ($n < 1024) return $n . ' B';
+    if ($n < 1048576) return round($n / 1024, 1) . ' KB';
+    return round($n / 1048576, 1) . ' MB';
+}
+
 function client_ip(): string
 {
     return $_SERVER['REMOTE_ADDR'] ?? '';

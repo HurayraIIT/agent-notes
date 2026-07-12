@@ -33,7 +33,7 @@
                 </td>
                 <td class="px-4 py-3"><?= $row['email_verified_at'] ? '✅' : '<span class="text-xs text-amber-600 dark:text-amber-400">pending</span>' ?></td>
                 <td class="px-4 py-3"><?= e((string) $row['note_count']) ?> <span class="text-xs text-slate-500 dark:text-slate-400">· <?= number_format((int) $row['total_views']) ?> views</span></td>
-                <td class="px-4 py-3 text-slate-500 dark:text-slate-400"><?= e($row['last_login_at'] ?? 'never') ?></td>
+                <td class="px-4 py-3 text-slate-500 dark:text-slate-400"><?= e($row['last_login_at'] ? fmt_dt($row['last_login_at']) : 'never') ?></td>
                 <td class="px-4 py-3 text-slate-500 dark:text-slate-400"><?= e($row['last_login_ip'] ?? '—') ?></td>
                 <td class="px-4 py-3 text-slate-500 dark:text-slate-400 max-w-[220px] truncate" title="<?= e($row['last_login_user_agent'] ?? '') ?>"><?= e($row['last_login_user_agent'] ?? '—') ?></td>
                 <td class="px-4 py-3 text-right">

@@ -47,7 +47,7 @@ function generate_pdf(array $note): string
         img { max-width: 100%; }
         </style></head><body>'
         . '<h1 class="doc-title">' . e($note['title']) . '</h1>'
-        . '<p class="doc-meta">Updated ' . e($note['updated_at']) . ' · ' . e(note_url($note['slug'])) . '</p>'
+        . '<p class="doc-meta">Updated ' . e(fmt_dt($note['updated_at'])) . ' · ' . e(note_url($note['slug'])) . '</p>'
         . markdown_to_html($note['content'])
         . '</body></html>';
 

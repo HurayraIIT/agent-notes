@@ -6,9 +6,9 @@
     <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
         <h2 class="font-semibold mb-2">Account</h2>
         <dl class="space-y-1 text-slate-600 dark:text-slate-400">
-            <div><dt class="inline text-slate-400 dark:text-slate-500">Joined:</dt> <dd class="inline"><?= e($target['created_at']) ?></dd></div>
-            <div><dt class="inline text-slate-400 dark:text-slate-500">Verified:</dt> <dd class="inline"><?= e($target['email_verified_at'] ?? 'not yet') ?></dd></div>
-            <div><dt class="inline text-slate-400 dark:text-slate-500">Last login:</dt> <dd class="inline"><?= e($target['last_login_at'] ?? 'never') ?></dd></div>
+            <div><dt class="inline text-slate-400 dark:text-slate-500">Joined:</dt> <dd class="inline"><?= e(fmt_dt($target['created_at'])) ?></dd></div>
+            <div><dt class="inline text-slate-400 dark:text-slate-500">Verified:</dt> <dd class="inline"><?= e($target['email_verified_at'] ? fmt_dt($target['email_verified_at']) : 'not yet') ?></dd></div>
+            <div><dt class="inline text-slate-400 dark:text-slate-500">Last login:</dt> <dd class="inline"><?= e($target['last_login_at'] ? fmt_dt($target['last_login_at']) : 'never') ?></dd></div>
             <div><dt class="inline text-slate-400 dark:text-slate-500">IP:</dt> <dd class="inline"><?= e($target['last_login_ip'] ?? '—') ?></dd></div>
             <div><dt class="inline text-slate-400 dark:text-slate-500">Device:</dt> <dd class="inline break-all"><?= e($target['last_login_user_agent'] ?? '—') ?></dd></div>
         </dl>
@@ -20,7 +20,7 @@
             <?php foreach ($tokens as $t): ?>
             <li><code class="text-xs bg-slate-100 dark:bg-slate-800 rounded px-1"><?= e($t['prefix']) ?>…</code> <?= e($t['name']) ?>
                 <?= $t['revoked_at'] ? '<span class="text-red-500 text-xs">(revoked)</span>' : '' ?>
-                <span class="text-xs text-slate-400 dark:text-slate-500">last used <?= e($t['last_used_at'] ?? 'never') ?></span></li>
+                <span class="text-xs text-slate-400 dark:text-slate-500">last used <?= e($t['last_used_at'] ? fmt_dt($t['last_used_at']) : 'never') ?></span></li>
             <?php endforeach; ?>
         </ul>
     </div>
@@ -32,7 +32,7 @@
     <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 px-4 py-3">
         <div class="min-w-0 flex-1 basis-full sm:basis-auto">
             <a href="/n/<?= e($n['slug']) ?>" class="font-medium hover:underline truncate block"><?= e($n['title']) ?></a>
-            <div class="text-xs text-slate-500 dark:text-slate-400">Updated <?= e($n['updated_at']) ?> · <?= number_format((int) $n['size_bytes']) ?> bytes · <?= number_format((int) $n['views']) ?> views</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">Updated <?= e(fmt_dt($n['updated_at'])) ?> · <?= e(fmt_bytes((int) $n['size_bytes'])) ?> · <?= number_format((int) $n['views']) ?> views</div>
         </div>
         <form method="post" action="/admin/note/delete" onsubmit="return confirm('Delete this note?')">
             <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">

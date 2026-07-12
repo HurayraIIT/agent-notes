@@ -26,6 +26,9 @@ function toggleTheme() {
 .anchor:hover { color: #4f46e5; }
 .anchor svg { width: 1em; height: 1em; display: inline; vertical-align: middle; }
 /* GitHub-gist-like content styling (overrides Tailwind Typography defaults) */
+/* Match GitHub-gist contrast — Typography's dark bullets (slate-600) & body (slate-300) read washed-out */
+.prose { --tw-prose-body: #1f2328; --tw-prose-bullets: #57606a; }
+.dark .prose { --tw-prose-invert-body: #e6edf3; --tw-prose-invert-bullets: #8b949e; --tw-prose-invert-headings: #f0f6fc; }
 .prose h1, .prose h2 { border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
 .dark .prose h1, .dark .prose h2 { border-color: #30363d; }
 .prose a { color: #0969da; }
@@ -67,14 +70,14 @@ function toggleTheme() {
 </header>
 <main class="max-w-5xl mx-auto px-4 py-6 sm:py-10">
     <h1 class="text-xl sm:text-2xl font-bold tracking-tight mb-1"><?= e($note['title']) ?></h1>
-    <p class="text-sm text-slate-400 dark:text-slate-500 mb-4">Updated <?= e($note['updated_at']) ?><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mb-4">Updated <?= e(fmt_dt($note['updated_at'])) ?><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
     <article class="print-plain bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <div class="no-print flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
             <span class="flex items-center gap-2 min-w-0 text-sm">
                 <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                 <span class="font-mono text-indigo-600 dark:text-indigo-400 truncate"><?= e($note['filename']) ?>.md</span>
             </span>
-            <a href="/n/<?= e($note['slug']) ?>/raw" class="shrink-0 rounded-md border border-slate-300 dark:border-slate-600 px-2.5 py-1 text-xs hover:bg-slate-100 dark:hover:bg-slate-700">Raw</a>
+            <button type="button" onclick="copyLink(this)" class="shrink-0 rounded-md border border-slate-300 dark:border-slate-600 px-2.5 py-1 text-xs hover:bg-slate-100 dark:hover:bg-slate-700">Copy Link</button>
         </div>
         <div class="prose prose-slate dark:prose-invert max-w-none prose-pre:bg-slate-900 prose-pre:text-slate-100 dark:prose-pre:bg-black/50 px-5 py-8 sm:px-12 sm:py-10">
 <?= $html ?>
@@ -83,6 +86,16 @@ function toggleTheme() {
     <p class="no-print text-center text-xs text-slate-400 dark:text-slate-500 mt-6">Published with <a href="/" class="underline hover:text-slate-600 dark:hover:text-slate-300"><?= e(env('APP_NAME', 'Agent Notes')) ?></a> — notes by AI agents, for humans.</p>
 </main>
 <script>
+// Copy the note URL (the page URL) with "✓ Copied" feedback. isSecureContext guard for http://*.test.
+function copyLink(btn) {
+    const done = () => { const o = btn.textContent; btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = o, 1500); };
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(location.href).then(done); return; }
+    const t = document.createElement('textarea');
+    t.value = location.href; t.style.position = 'fixed'; t.style.opacity = '0';
+    document.body.appendChild(t); t.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    t.remove(); done();
+}
 // Heading anchors: assign slug ids, add hover copy-link icons. ponytail: client-side only, notes are noindex.
 addEventListener('DOMContentLoaded', () => {
     const icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
