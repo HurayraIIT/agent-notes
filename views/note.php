@@ -53,6 +53,13 @@ function toggleTheme() {
 <style>.hljs { background: transparent; padding: 0; }</style>
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js" defer></script>
 <script>addEventListener('DOMContentLoaded', () => hljs.highlightAll());</script>
+<script>
+// Localize UTC timestamps (<time data-local>) to the viewer's own timezone.
+addEventListener('DOMContentLoaded', () => document.querySelectorAll('time[data-local]').forEach(t => {
+    const d = new Date(t.getAttribute('datetime'));
+    if (!isNaN(d)) t.textContent = d.toLocaleString();
+}));
+</script>
 </head>
 <body class="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
 <header class="no-print bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800">
@@ -70,7 +77,7 @@ function toggleTheme() {
 </header>
 <main class="max-w-5xl mx-auto px-4 py-6 sm:py-10">
     <h1 class="text-xl sm:text-2xl font-bold tracking-tight mb-1"><?= e($note['title']) ?></h1>
-    <p class="text-sm text-slate-400 dark:text-slate-500 mb-4">Updated <?= e(fmt_dt($note['updated_at'])) ?><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mb-4">Updated <?= dt_tag($note['updated_at']) ?><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
     <article class="print-plain bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <div class="no-print flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
             <span class="flex items-center gap-2 min-w-0 text-sm">

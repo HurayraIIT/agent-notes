@@ -50,6 +50,8 @@ function db(): PDO
         $pdo = new PDO($dsn, env('DB_USERNAME', 'root'), env('DB_PASSWORD', ''), [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            // Store & read all datetimes as UTC, so views can stamp them with Z and localize per viewer.
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone = '+00:00'",
         ]);
     }
     return $pdo;
@@ -75,11 +77,23 @@ function random_token(int $bytes = 24): string
     return rtrim(strtr(base64_encode(random_bytes($bytes)), '+/', '-_'), '=');
 }
 
-// Human-readable datetime, e.g. "July 12, 2026 07:50:06 AM"; passes through non-datetime strings unchanged.
+// Human-readable UTC datetime, e.g. "July 12, 2026 07:50:06 AM UTC" (DB datetimes are UTC — see db()).
+// Used where JS can't localize (PDF header). Passes through non-datetime strings unchanged.
 function fmt_dt(?string $v): string
 {
-    $ts = $v ? strtotime($v) : false;
-    return $ts ? date('F j, Y h:i:s A', $ts) : (string) $v;
+    $ts = $v ? strtotime($v . ' UTC') : false;
+    return $ts ? gmdate('F j, Y h:i:s A', $ts) . ' UTC' : (string) $v;
+}
+
+// <time> element carrying the UTC instant; the layout/note.php JS rewrites its text to the viewer's
+// local timezone. Falls back to the escaped raw string for non-datetime input.
+function dt_tag(?string $v): string
+{
+    $ts = $v ? strtotime($v . ' UTC') : false;
+    if (!$ts) {
+        return e((string) $v);
+    }
+    return '<time datetime="' . e(gmdate('c', $ts)) . '" data-local>' . e(fmt_dt($v)) . '</time>';
 }
 
 // Human-readable byte size, e.g. "512 B", "2 KB", "3 MB".

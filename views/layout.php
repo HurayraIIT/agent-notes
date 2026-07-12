@@ -51,6 +51,11 @@ function copyText(text, btn) {
 function copyCmd(btn) {
     copyText(btn.closest('[data-cmd]').querySelector('pre').innerText, btn);
 }
+// Localize UTC timestamps (<time data-local>) to each viewer's own timezone.
+addEventListener('DOMContentLoaded', () => document.querySelectorAll('time[data-local]').forEach(t => {
+    const d = new Date(t.getAttribute('datetime'));
+    if (!isNaN(d)) t.textContent = d.toLocaleString();
+}));
 </script>
 </head>
 <body class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col antialiased">
