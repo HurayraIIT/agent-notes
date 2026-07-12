@@ -40,6 +40,10 @@ function toggleTheme() {
 .dark .prose th, .dark .prose td { border-color: #30363d; }
 .prose tbody tr:nth-child(2n) { background: #f6f8fa; }
 .dark .prose tbody tr:nth-child(2n) { background: rgba(255,255,255,.03); }
+/* Inline code: drop Typography's literal backticks, render as a GitHub-style pill (leave code inside <pre> alone) */
+.prose :not(pre) > code::before, .prose :not(pre) > code::after { content: none; }
+.prose :not(pre) > code { background: rgba(175,184,193,.2); padding: .2em .4em; border-radius: 6px; font-size: 85%; font-weight: 400; }
+.dark .prose :not(pre) > code { background: rgba(110,118,129,.4); }
 </style>
 <!-- ponytail: one dark hljs theme for both modes — pre blocks are always dark (prose-pre:bg-slate-900) -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/github-dark.min.css">
