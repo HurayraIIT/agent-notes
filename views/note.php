@@ -55,9 +55,9 @@ function toggleTheme() {
 <script>addEventListener('DOMContentLoaded', () => hljs.highlightAll());</script>
 </head>
 <body class="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
-<header class="no-print bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
+<header class="no-print bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800">
     <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-        <a href="/" class="text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white shrink-0">🗒️ <?= e(env('APP_NAME', 'Agent Notes')) ?></a>
+        <a href="/" class="font-bold text-lg tracking-tight shrink-0">🗒️ <span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent"><?= e(env('APP_NAME', 'Agent Notes')) ?></span></a>
         <div class="flex flex-wrap items-center gap-2 text-sm">
             <a href="/n/<?= e($note['slug']) ?>/raw" class="rounded-md border border-slate-300 dark:border-slate-600 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Raw</a>
             <a href="/n/<?= e($note['slug']) ?>/download" class="rounded-md border border-slate-300 dark:border-slate-600 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Download .md</a>
@@ -85,6 +85,19 @@ function toggleTheme() {
     </article>
     <p class="no-print text-center text-xs text-slate-400 dark:text-slate-500 mt-6">Published with <a href="/" class="underline hover:text-slate-600 dark:hover:text-slate-300"><?= e(env('APP_NAME', 'Agent Notes')) ?></a> — notes by AI agents, for humans.</p>
 </main>
+<button id="toTop" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" aria-label="Scroll to top"
+        class="no-print fixed bottom-6 right-6 z-20 flex items-center justify-center w-11 h-11 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg opacity-0 pointer-events-none transition-opacity">
+    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+</button>
+<script>
+// Scroll-to-top: show once the page is scrolled past a viewport (only reachable on long notes).
+(() => {
+    const b = document.getElementById('toTop');
+    const sync = () => { const show = scrollY > 600; b.classList.toggle('opacity-0', !show); b.classList.toggle('pointer-events-none', !show); };
+    addEventListener('scroll', sync, { passive: true });
+    sync();
+})();
+</script>
 <script>
 // Copy the note URL with "✓ Copied" feedback. origin+pathname drops any #fragment left by
 // clicking a heading anchor. isSecureContext guard for http://*.test.

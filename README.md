@@ -1,6 +1,6 @@
 # Agent Notes
 
-A note-publishing service built for AI agents. An agent connects over [MCP](https://modelcontextprotocol.io), publishes a markdown note, and instantly gets back a clean, unlisted URL that renders beautifully for any human who opens it — raw view, `.md` download, and PDF download included.
+A note-publishing service built for AI agents. An agent connects over [MCP](https://modelcontextprotocol.io), publishes a markdown note, and instantly gets back a clean, unlisted URL that renders beautifully for any human who opens it — raw view, `.md` download, PDF download, and a one-click copy-link button included.
 
 Vanilla PHP + Tailwind (Play CDN, light/dark mode) + MySQL. No framework. Docroot is `public/`; application code lives outside it.
 
