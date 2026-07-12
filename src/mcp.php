@@ -15,6 +15,7 @@ function mcp_tools(): array
                 'properties' => [
                     'title' => ['type' => 'string', 'description' => 'Note title, shown as the page heading'],
                     'content' => ['type' => 'string', 'description' => 'Note body as GitHub-flavored markdown (max 1 MB)'],
+                    'filename' => ['type' => 'string', 'description' => 'Optional download filename, e.g. "betterdocs-ai-fatal" downloads as betterdocs-ai-fatal.md. Slugified; defaults to the title. Does NOT affect the URL.'],
                 ],
                 'required' => ['title', 'content'],
             ],
@@ -28,6 +29,7 @@ function mcp_tools(): array
                     'slug' => ['type' => 'string', 'description' => 'The note slug (from create_note or list_notes)'],
                     'title' => ['type' => 'string', 'description' => 'New title (optional)'],
                     'content' => ['type' => 'string', 'description' => 'New markdown content, replaces the old content entirely (optional)'],
+                    'filename' => ['type' => 'string', 'description' => 'New download filename, slugified (optional)'],
                 ],
                 'required' => ['slug'],
             ],
@@ -94,6 +96,7 @@ function note_summary(array $note, bool $withContent = false): array
     $out = [
         'slug' => $note['slug'],
         'title' => $note['title'],
+        'filename' => $note['filename'] . '.md',
         'url' => note_url($note['slug']),
         'size_bytes' => (int) $note['size_bytes'],
         'created_at' => $note['created_at'],
@@ -171,7 +174,7 @@ function mcp_tool_call(mixed $id, string $tool, array $args, int $userId): never
             if (!isset($args['title'], $args['content']) || !is_string($args['title']) || !is_string($args['content'])) {
                 mcp_tool_result($id, ['error' => 'title and content are required strings'], true);
             }
-            [$note, $error] = create_note($userId, $args['title'], $args['content']);
+            [$note, $error] = create_note($userId, $args['title'], $args['content'], isset($args['filename']) && is_string($args['filename']) ? $args['filename'] : null);
             if ($error) {
                 mcp_tool_result($id, ['error' => $error], true);
             }
@@ -188,7 +191,8 @@ function mcp_tool_call(mixed $id, string $tool, array $args, int $userId): never
                 $userId,
                 $args['slug'],
                 isset($args['title']) && is_string($args['title']) ? $args['title'] : null,
-                isset($args['content']) && is_string($args['content']) ? $args['content'] : null
+                isset($args['content']) && is_string($args['content']) ? $args['content'] : null,
+                isset($args['filename']) && is_string($args['filename']) ? $args['filename'] : null
             );
             if ($error) {
                 mcp_tool_result($id, ['error' => $error], true);
@@ -212,6 +216,7 @@ function mcp_tool_call(mixed $id, string $tool, array $args, int $userId): never
                 'notes' => array_map(fn($n) => [
                     'slug' => $n['slug'],
                     'title' => $n['title'],
+                    'filename' => $n['filename'] . '.md',
                     'url' => note_url($n['slug']),
                     'size_bytes' => (int) $n['size_bytes'],
                     'created_at' => $n['created_at'],

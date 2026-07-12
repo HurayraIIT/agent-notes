@@ -25,7 +25,7 @@ if (preg_match('#^/n/([A-Za-z0-9-]+)(/raw|/download|/pdf)?$#', $path, $m)) {
         text_response($note['content'], 'text/markdown; charset=utf-8');
     }
     if ($mode === '/download') {
-        header('Content-Disposition: attachment; filename="' . $note['slug'] . '.md"');
+        header('Content-Disposition: attachment; filename="' . $note['filename'] . '.md"');
         text_response($note['content'], 'text/markdown; charset=utf-8');
     }
     if ($mode === '/pdf') {

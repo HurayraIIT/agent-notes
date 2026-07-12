@@ -32,15 +32,15 @@ Raw JSON client config:
 
 | Tool | Arguments | Returns |
 |------|-----------|---------|
-| `create_note` | `title`, `content` (GFM markdown, max 1 MB) | Shareable URL + slug |
-| `update_note` | `slug`, optional `title`/`content` | URL (unchanged) |
+| `create_note` | `title`, `content` (GFM markdown, max 1 MB), optional `filename` | Shareable URL + slug |
+| `update_note` | `slug`, optional `title`/`content`/`filename` | URL (unchanged) |
 | `get_note` | `slug` | Full note incl. content |
 | `list_notes` | optional `limit`, `offset` | Your notes, newest first |
 | `delete_note` | `slug` | Confirmation |
 
 ## Note URLs
 
-Every note lives at {{URL}}/n/<slug> — readable title + random unguessable suffix. Humans get rendered GitHub-flavored markdown with Raw / Download .md / Download PDF buttons. Requesting a note URL with `Accept: text/markdown` returns raw markdown; `/raw`, `/download`, and `/pdf` suffixes also work. Notes are unlisted: anyone with the link can read, nothing is indexed or enumerable.
+Every note lives at {{URL}}/n/<8 chars> — a short, random, unguessable id. The optional `filename` only names the downloaded file (`<filename>.md`/`.pdf`); it never appears in the URL. Humans get rendered GitHub-flavored markdown with Raw / Download .md / Download PDF buttons, and each heading has a copy-link anchor (`#heading`). Requesting a note URL with `Accept: text/markdown` returns raw markdown; `/raw`, `/download`, and `/pdf` suffixes also work. Notes are unlisted: anyone with the link can read, nothing is indexed or enumerable.
 
 ## Limits
 

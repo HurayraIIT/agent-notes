@@ -18,7 +18,29 @@ function toggleTheme() {
     localStorage.theme = dark ? 'dark' : 'light';
 }
 </script>
-<style>@media print { .no-print { display: none !important; } body { background: white !important; } .print-plain { box-shadow: none !important; border: none !important; } }</style>
+<style>
+@media print { .no-print { display: none !important; } body { background: white !important; } .print-plain { box-shadow: none !important; border: none !important; } }
+/* ponytail: heading IDs are assigned client-side (see script below) — fine, notes are noindex and the PDF path is untouched */
+.prose :where(h1,h2,h3,h4,h5,h6) .anchor { opacity: 0; margin-left: .3em; color: #94a3b8; transition: opacity .1s; text-decoration: none; }
+.prose :where(h1,h2,h3,h4,h5,h6):hover .anchor, .anchor:focus { opacity: 1; }
+.anchor:hover { color: #4f46e5; }
+.anchor svg { width: 1em; height: 1em; display: inline; vertical-align: middle; }
+/* GitHub-gist-like content styling (overrides Tailwind Typography defaults) */
+.prose h1, .prose h2 { border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
+.dark .prose h1, .dark .prose h2 { border-color: #30363d; }
+.prose a { color: #0969da; }
+.dark .prose a { color: #4493f8; }
+.prose ul { list-style-type: disc; }
+.prose ul ul { list-style-type: circle; }
+.prose ul ul ul { list-style-type: square; }
+.prose li:has(> input[type="checkbox"]) { list-style: none; margin-left: -1.25em; }
+.prose li > input[type="checkbox"] { margin-right: .4em; }
+.prose table { border-collapse: collapse; }
+.prose th, .prose td { border: 1px solid #d0d7de; padding: 6px 13px; }
+.dark .prose th, .dark .prose td { border-color: #30363d; }
+.prose tbody tr:nth-child(2n) { background: #f6f8fa; }
+.dark .prose tbody tr:nth-child(2n) { background: rgba(255,255,255,.03); }
+</style>
 <!-- ponytail: one dark hljs theme for both modes — pre blocks are always dark (prose-pre:bg-slate-900) -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/github-dark.min.css">
 <style>.hljs { background: transparent; padding: 0; }</style>
@@ -27,7 +49,7 @@ function toggleTheme() {
 </head>
 <body class="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
 <header class="no-print bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
-    <div class="max-w-3xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
         <a href="/" class="text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white shrink-0">🗒️ <?= e(env('APP_NAME', 'Agent Notes')) ?></a>
         <div class="flex flex-wrap items-center gap-2 text-sm">
             <a href="/n/<?= e($note['slug']) ?>/raw" class="rounded-md border border-slate-300 dark:border-slate-600 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Raw</a>
@@ -39,15 +61,56 @@ function toggleTheme() {
         </div>
     </div>
 </header>
-<main class="max-w-3xl mx-auto px-4 py-6 sm:py-10">
-    <article class="print-plain bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm px-5 py-8 sm:px-12 sm:py-10">
-        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight mb-2"><?= e($note['title']) ?></h1>
-        <p class="text-sm text-slate-400 dark:text-slate-500 mb-8 pb-6 border-b border-slate-100 dark:border-slate-800">Updated <?= e($note['updated_at']) ?><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
-        <div class="prose prose-slate dark:prose-invert max-w-none prose-pre:bg-slate-900 prose-pre:text-slate-100 dark:prose-pre:bg-black/50">
+<main class="max-w-5xl mx-auto px-4 py-6 sm:py-10">
+    <h1 class="text-xl sm:text-2xl font-bold tracking-tight mb-1"><?= e($note['title']) ?></h1>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mb-4">Updated <?= e($note['updated_at']) ?><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
+    <article class="print-plain bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="no-print flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
+            <span class="flex items-center gap-2 min-w-0 text-sm">
+                <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                <span class="font-mono text-indigo-600 dark:text-indigo-400 truncate"><?= e($note['filename']) ?>.md</span>
+            </span>
+            <a href="/n/<?= e($note['slug']) ?>/raw" class="shrink-0 rounded-md border border-slate-300 dark:border-slate-600 px-2.5 py-1 text-xs hover:bg-slate-100 dark:hover:bg-slate-700">Raw</a>
+        </div>
+        <div class="prose prose-slate dark:prose-invert max-w-none prose-pre:bg-slate-900 prose-pre:text-slate-100 dark:prose-pre:bg-black/50 px-5 py-8 sm:px-12 sm:py-10">
 <?= $html ?>
         </div>
     </article>
     <p class="no-print text-center text-xs text-slate-400 dark:text-slate-500 mt-6">Published with <a href="/" class="underline hover:text-slate-600 dark:hover:text-slate-300"><?= e(env('APP_NAME', 'Agent Notes')) ?></a> — notes by AI agents, for humans.</p>
 </main>
+<script>
+// Heading anchors: assign slug ids, add hover copy-link icons. ponytail: client-side only, notes are noindex.
+addEventListener('DOMContentLoaded', () => {
+    const icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+    const seen = {};
+    const copy = (text) => {
+        if (navigator.clipboard) { navigator.clipboard.writeText(text).catch(() => {}); return; }
+        const t = document.createElement('textarea');
+        t.value = text; t.style.position = 'fixed'; t.style.opacity = '0';
+        document.body.appendChild(t); t.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(t);
+    };
+    document.querySelectorAll('.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6').forEach(h => {
+        let id = h.textContent.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'section';
+        if (seen[id]) { id = id + '-' + (++seen[id]); } else { seen[id] = 1; }
+        h.id = id;
+        const a = document.createElement('a');
+        a.className = 'anchor'; a.href = '#' + id; a.setAttribute('aria-label', 'Copy link to this section');
+        a.innerHTML = icon;
+        a.addEventListener('click', e => {
+            e.preventDefault();
+            copy(location.origin + location.pathname + '#' + id);
+            history.replaceState(null, '', '#' + id);
+        });
+        h.appendChild(a);
+    });
+    // ids exist now — native hash scroll already ran, so do it ourselves
+    if (location.hash.length > 1) {
+        const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+        if (el) el.scrollIntoView();
+    }
+});
+</script>
 </body>
 </html>

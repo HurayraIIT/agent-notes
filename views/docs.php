@@ -27,8 +27,8 @@
 <table class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg">
 <thead class="bg-slate-100 dark:bg-slate-800"><tr><th class="px-3 py-2 text-left">Tool</th><th class="px-3 py-2 text-left">Arguments</th><th class="px-3 py-2 text-left">Returns</th></tr></thead>
 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-<tr><td class="px-3 py-2"><code>create_note</code></td><td class="px-3 py-2"><code>title</code>, <code>content</code> (GFM markdown, max 1&nbsp;MB)</td><td class="px-3 py-2">Shareable URL + slug</td></tr>
-<tr><td class="px-3 py-2"><code>update_note</code></td><td class="px-3 py-2"><code>slug</code>, optional <code>title</code>/<code>content</code></td><td class="px-3 py-2">URL (unchanged)</td></tr>
+<tr><td class="px-3 py-2"><code>create_note</code></td><td class="px-3 py-2"><code>title</code>, <code>content</code> (GFM markdown, max 1&nbsp;MB), optional <code>filename</code></td><td class="px-3 py-2">Shareable URL + slug</td></tr>
+<tr><td class="px-3 py-2"><code>update_note</code></td><td class="px-3 py-2"><code>slug</code>, optional <code>title</code>/<code>content</code>/<code>filename</code></td><td class="px-3 py-2">URL (unchanged)</td></tr>
 <tr><td class="px-3 py-2"><code>get_note</code></td><td class="px-3 py-2"><code>slug</code></td><td class="px-3 py-2">Full note incl. content</td></tr>
 <tr><td class="px-3 py-2"><code>list_notes</code></td><td class="px-3 py-2">optional <code>limit</code>, <code>offset</code></td><td class="px-3 py-2">Your notes, newest first</td></tr>
 <tr><td class="px-3 py-2"><code>delete_note</code></td><td class="px-3 py-2"><code>slug</code></td><td class="px-3 py-2">Confirmation</td></tr>
@@ -37,7 +37,7 @@
 </div>
 
 <h2>Note URLs</h2>
-<p>Every note lives at <code><?= e(app_url('/n/')) ?>&lt;slug&gt;</code> — a readable title plus a random unguessable suffix. Humans see rendered GitHub-flavored markdown with <strong>Raw</strong>, <strong>Download .md</strong>, and <strong>Download PDF</strong> buttons. Agents requesting a note URL with <code>Accept: text/markdown</code> get the raw markdown. <code>/raw</code>, <code>/download</code>, and <code>/pdf</code> suffixes work too. Notes are unlisted: anyone with the link can read, nothing is indexed or enumerable.</p>
+<p>Every note lives at <code><?= e(app_url('/n/')) ?>&lt;8&nbsp;chars&gt;</code> — a short, random, unguessable id. The optional <code>filename</code> only names the downloaded file (<code>&lt;filename&gt;.md</code>/<code>.pdf</code>); it never appears in the URL. Humans see rendered GitHub-flavored markdown with <strong>Raw</strong>, <strong>Download .md</strong>, and <strong>Download PDF</strong> buttons, and each heading offers a copy-link anchor (<code>#heading</code>). Agents requesting a note URL with <code>Accept: text/markdown</code> get the raw markdown. <code>/raw</code>, <code>/download</code>, and <code>/pdf</code> suffixes work too. Notes are unlisted: anyone with the link can read, nothing is indexed or enumerable.</p>
 
 <h2>Limits</h2>
 <ul>

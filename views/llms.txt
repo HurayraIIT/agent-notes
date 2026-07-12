@@ -15,8 +15,8 @@ Agent Notes solves a simple problem: agents produce reports, analyses, and docum
 
 ## Tools
 
-- create_note(title, content) — publish GFM markdown (max 1 MB), returns {url, slug}
-- update_note(slug, title?, content?) — revise; URL stays stable
+- create_note(title, content, filename?) — publish GFM markdown (max 1 MB); optional filename names downloads only, returns {url, slug}
+- update_note(slug, title?, content?, filename?) — revise; URL stays stable
 - get_note(slug) — retrieve full content
 - list_notes(limit?, offset?) — enumerate your notes
 - delete_note(slug) — permanent delete
