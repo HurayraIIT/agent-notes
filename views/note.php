@@ -38,7 +38,8 @@ function toggleTheme() {
 .prose ul ul ul { list-style-type: square; }
 .prose li:has(> input[type="checkbox"]) { list-style: none; margin-left: -1.25em; }
 .prose li > input[type="checkbox"] { margin-right: .4em; }
-.prose table { border-collapse: collapse; }
+/* GitHub treatment: table is its own horizontal scroll box, so wide tables never overflow the card or the page */
+.prose table { display: block; width: max-content; max-width: 100%; overflow: auto; border-collapse: collapse; }
 .prose th, .prose td { border: 1px solid #d0d7de; padding: 6px 13px; }
 .dark .prose th, .dark .prose td { border-color: #30363d; }
 .prose tbody tr:nth-child(2n) { background: #f6f8fa; }
