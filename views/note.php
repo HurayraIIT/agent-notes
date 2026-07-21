@@ -24,7 +24,7 @@ function toggleTheme() {
 .prose :where(h1,h2,h3,h4,h5,h6) .anchor { opacity: 0; margin-left: .3em; color: #94a3b8; transition: opacity .1s; text-decoration: none; }
 .prose :where(h1,h2,h3,h4,h5,h6):hover .anchor, .anchor:focus { opacity: 1; }
 .anchor:hover { color: #4f46e5; }
-.anchor svg { width: 1em; height: 1em; display: inline; vertical-align: middle; }
+.anchor svg { width: .8em; height: .8em; display: inline; vertical-align: middle; }
 /* GitHub-gist-like content styling (overrides Tailwind Typography defaults) */
 /* Match GitHub-gist contrast — Typography's dark bullets (slate-600) & body (slate-300) read washed-out */
 .prose { --tw-prose-body: #1f2328; --tw-prose-bullets: #57606a; }
@@ -61,10 +61,27 @@ function fmtLocal(d) {
     return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
         + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 }
-addEventListener('DOMContentLoaded', () => document.querySelectorAll('time[data-local]').forEach(t => {
-    const d = new Date(t.getAttribute('datetime'));
-    if (!isNaN(d)) t.textContent = fmtLocal(d);
-}));
+// "5 minutes ago" — coarsest unit that fits. Full local timestamp goes in title (hover tooltip).
+function timeAgo(d) {
+    const s = Math.max(0, Math.floor((Date.now() - d) / 1000));
+    for (const [sec, name] of [[31536000,'year'],[2592000,'month'],[86400,'day'],[3600,'hour'],[60,'minute'],[1,'second']]) {
+        const n = Math.floor(s / sec);
+        if (n >= 1) return n + ' ' + name + (n > 1 ? 's' : '') + ' ago';
+    }
+    return 'just now';
+}
+addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('time[data-local]').forEach(t => {
+        const d = new Date(t.getAttribute('datetime'));
+        if (!isNaN(d)) t.textContent = fmtLocal(d);
+    });
+    document.querySelectorAll('time[data-ago]').forEach(t => {
+        const d = new Date(t.getAttribute('datetime'));
+        if (isNaN(d)) return;
+        t.title = fmtLocal(d);
+        t.textContent = timeAgo(d);
+    });
+});
 </script>
 </head>
 <body class="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
@@ -83,7 +100,7 @@ addEventListener('DOMContentLoaded', () => document.querySelectorAll('time[data-
 </header>
 <main class="max-w-5xl mx-auto px-4 py-6 sm:py-10">
     <h1 class="text-xl sm:text-2xl font-bold tracking-tight mb-1"><?= e($note['title']) ?></h1>
-    <p class="text-sm text-slate-400 dark:text-slate-500 mb-4">Updated <?= dt_tag($note['updated_at']) ?><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mb-4">Updated <time datetime="<?= e(gmdate('c', strtotime($note['updated_at'] . ' UTC'))) ?>" data-ago title="<?= e(fmt_dt($note['updated_at'])) ?>"><?= e(fmt_dt($note['updated_at'])) ?></time><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
     <article class="print-plain bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <div class="no-print flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
             <span class="flex items-center gap-2 min-w-0 text-sm">

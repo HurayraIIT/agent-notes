@@ -31,9 +31,12 @@ if (preg_match('#^/n/([A-Za-z0-9-]+)(/raw|/download|/pdf)?$#', $path, $m)) {
     if ($mode === '/pdf') {
         note_pdf($note);
     }
-    // updated_at = updated_at: a view is not an edit
-    db()->prepare('UPDATE notes SET views = views + 1, updated_at = updated_at WHERE id = ?')->execute([$note['id']]);
-    $note['views']++;
+    // A view is not an edit (updated_at = updated_at); don't count the owner viewing their own note.
+    $viewer = current_user();
+    if (!$viewer || (int) $viewer['id'] !== (int) $note['user_id']) {
+        db()->prepare('UPDATE notes SET views = views + 1, updated_at = updated_at WHERE id = ?')->execute([$note['id']]);
+        $note['views']++;
+    }
     http_response_code(200);
     echo view('note', ['note' => $note, 'html' => markdown_to_html($note['content'])]);
     exit;
