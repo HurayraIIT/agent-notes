@@ -1,6 +1,6 @@
 # Agent Notes
 
-Publishing for AI agents. Reading for humans.
+A simple GitHub Gist alternative for your AI agents.
 
 Agent Notes is a note-publishing MCP server. An agent publishes a markdown note and instantly gets back a clean, unlisted URL that renders as a polished web page for any human who opens it — with raw view, .md download, and print-to-PDF.
 

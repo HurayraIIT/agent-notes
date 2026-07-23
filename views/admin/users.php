@@ -19,7 +19,6 @@
                 <th class="px-4 py-3 font-medium">Notes</th>
                 <th class="px-4 py-3 font-medium">Last login</th>
                 <th class="px-4 py-3 font-medium">IP</th>
-                <th class="px-4 py-3 font-medium">Device</th>
                 <th class="px-4 py-3"></th>
             </tr>
         </thead>
@@ -35,7 +34,6 @@
                 <td class="px-4 py-3"><?= e((string) $row['note_count']) ?> <span class="text-xs text-slate-500 dark:text-slate-400">· <?= number_format((int) $row['total_views']) ?> views</span></td>
                 <td class="px-4 py-3 text-slate-500 dark:text-slate-400"><?= $row['last_login_at'] ? dt_tag($row['last_login_at']) : 'never' ?></td>
                 <td class="px-4 py-3 text-slate-500 dark:text-slate-400"><?= e($row['last_login_ip'] ?? '—') ?></td>
-                <td class="px-4 py-3 text-slate-500 dark:text-slate-400 max-w-[220px] truncate" title="<?= e($row['last_login_user_agent'] ?? '') ?>"><?= e($row['last_login_user_agent'] ?? '—') ?></td>
                 <td class="px-4 py-3 text-right">
                     <?php if (!$row['is_admin']): ?>
                     <form method="post" action="/admin/user/delete" onsubmit="return confirm('Delete this user and ALL their notes, tokens and sessions?')">

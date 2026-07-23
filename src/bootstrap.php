@@ -85,15 +85,16 @@ function fmt_dt(?string $v): string
     return $ts ? gmdate('F j, Y h:i:s A', $ts) . ' UTC' : (string) $v;
 }
 
-// <time> element carrying the UTC instant; the layout/note.php JS rewrites its text to the viewer's
-// local timezone. Falls back to the escaped raw string for non-datetime input.
+// <time> element carrying the UTC instant; the layout/note.php JS rewrites its text to a relative
+// "x ago" string, with the full localized datetime on hover (title). No-JS: shows the full date.
+// Falls back to the escaped raw string for non-datetime input.
 function dt_tag(?string $v): string
 {
     $ts = $v ? strtotime($v . ' UTC') : false;
     if (!$ts) {
         return e((string) $v);
     }
-    return '<time datetime="' . e(gmdate('c', $ts)) . '" data-local>' . e(fmt_dt($v)) . '</time>';
+    return '<time datetime="' . e(gmdate('c', $ts)) . '" data-ago title="' . e(fmt_dt($v)) . '">' . e(fmt_dt($v)) . '</time>';
 }
 
 // Human-readable byte size, e.g. "512 B", "2 KB", "3 MB".
@@ -102,6 +103,16 @@ function fmt_bytes(int $n): string
     if ($n < 1024) return $n . ' B';
     if ($n < 1048576) return round($n / 1024, 1) . ' KB';
     return round($n / 1048576, 1) . ' MB';
+}
+
+// Brand mark — the gradient "note" icon (same art as the favicon), inline SVG so it stays crisp at any size.
+function brand_icon(): string
+{
+    return '<svg class="inline-block align-[-0.2em] w-[1.35em] h-[1.35em]" viewBox="0 0 32 32" aria-hidden="true">'
+        . '<defs><linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>'
+        . '<rect width="32" height="32" rx="7" fill="url(#brandGrad)"/>'
+        . '<g stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="9" y1="11" x2="23" y2="11"/><line x1="9" y1="16" x2="23" y2="16"/><line x1="9" y1="21" x2="18" y2="21"/></g>'
+        . '</svg>';
 }
 
 function client_ip(): string

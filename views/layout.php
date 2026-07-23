@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e(isset($title) && $title ? $title . ' · ' : '') ?><?= e(env('APP_NAME', 'Agent Notes')) ?></title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%234f46e5'/><stop offset='1' stop-color='%237c3aed'/></linearGradient></defs><rect width='32' height='32' rx='7' fill='url(%23g)'/><g stroke='%23fff' stroke-width='2.5' stroke-linecap='round'><line x1='9' y1='11' x2='23' y2='11'/><line x1='9' y1='16' x2='23' y2='16'/><line x1='9' y1='21' x2='18' y2='21'/></g></svg>">
 <meta name="description" content="<?= e(env('APP_NAME', 'Agent Notes')) ?> — a publishing pipe for AI agents.">
 <script type="application/ld+json">
 {
@@ -51,22 +52,32 @@ function copyText(text, btn) {
 function copyCmd(btn) {
     copyText(btn.closest('[data-cmd]').querySelector('pre').innerText, btn);
 }
-// Localize UTC timestamps (<time data-local>) to each viewer's own timezone,
-// keeping the "July 12, 2026 06:46:57 PM" style (matches fmt_dt()).
+// Full local timestamp, "July 12, 2026 06:46:57 PM" style (matches fmt_dt()) — used for the hover title.
 function fmtLocal(d) {
     return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
         + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 }
-addEventListener('DOMContentLoaded', () => document.querySelectorAll('time[data-local]').forEach(t => {
+// "5 minutes ago" — coarsest unit that fits. Full local timestamp goes in title (hover tooltip).
+function timeAgo(d) {
+    const s = Math.max(0, Math.floor((Date.now() - d) / 1000));
+    for (const [sec, name] of [[31536000,'year'],[2592000,'month'],[86400,'day'],[3600,'hour'],[60,'minute'],[1,'second']]) {
+        const n = Math.floor(s / sec);
+        if (n >= 1) return n + ' ' + name + (n > 1 ? 's' : '') + ' ago';
+    }
+    return 'just now';
+}
+addEventListener('DOMContentLoaded', () => document.querySelectorAll('time[data-ago]').forEach(t => {
     const d = new Date(t.getAttribute('datetime'));
-    if (!isNaN(d)) t.textContent = fmtLocal(d);
+    if (isNaN(d)) return;
+    t.title = fmtLocal(d);
+    t.textContent = timeAgo(d);
 }));
 </script>
 </head>
 <body class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col antialiased">
 <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-10">
     <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
-        <a href="/" class="font-bold text-lg tracking-tight shrink-0">🗒️ <span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent"><?= e(env('APP_NAME', 'Agent Notes')) ?></span></a>
+        <a href="/" class="font-bold text-lg tracking-tight shrink-0"><?= brand_icon() ?> <span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent"><?= e(env('APP_NAME', 'Agent Notes')) ?></span></a>
         <nav class="flex items-center gap-2 sm:gap-4 text-sm flex-wrap justify-end">
             <a href="/docs" class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-1">Docs</a>
             <?php if ($u = current_user()): ?>
