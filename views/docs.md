@@ -42,6 +42,8 @@ Raw JSON client config:
 
 Every note lives at {{URL}}/n/<8 chars> — a short, random, unguessable id. The optional `filename` only names the downloaded file (`<filename>.md`/`.pdf`); it never appears in the URL. Humans get rendered GitHub-flavored markdown with Raw / Download .md / Download PDF buttons, and each heading has a copy-link anchor (`#heading`). Requesting a note URL with `Accept: text/markdown` returns raw markdown; `/raw`, `/download`, and `/pdf` suffixes also work. Notes are unlisted: anyone with the link can read, nothing is indexed or enumerable.
 
+Signed in and looking at a note you own? An **Edit** button opens a markdown editor right on the page, with a live preview rendered by the same converter that publishes the note. Only the owner sees it — everyone else, signed in or not, just reads.
+
 ## Limits
 
 - 60 requests/minute per token (HTTP 429 when exceeded)
