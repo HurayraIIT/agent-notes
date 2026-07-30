@@ -75,10 +75,22 @@ addEventListener('DOMContentLoaded', () => document.querySelectorAll('time[data-
 </script>
 </head>
 <body class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col antialiased">
-<header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-10">
+<header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-20">
     <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
-        <a href="/" class="font-bold text-lg tracking-tight shrink-0"><?= brand_icon() ?> <span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent"><?= e(env('APP_NAME', 'Agent Notes')) ?></span></a>
-        <nav class="flex items-center gap-2 sm:gap-4 text-sm flex-wrap justify-end">
+        <a href="/" class="font-bold text-lg tracking-tight shrink-0 flex items-center gap-2"><?= brand_icon() ?> <span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent"><?= e(env('APP_NAME', 'Agent Notes')) ?></span></a>
+        
+        <!-- Mobile Toggle -->
+        <div class="flex items-center gap-2 md:hidden">
+            <button onclick="toggleTheme()" aria-label="Toggle dark mode" class="rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <span class="dark:hidden">🌙</span><span class="hidden dark:inline">☀️</span>
+            </button>
+            <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" aria-label="Toggle mobile menu" class="p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+        </div>
+
+        <!-- Desktop Nav -->
+        <nav class="hidden md:flex items-center gap-4 text-sm justify-end">
             <a href="/docs" class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-1">Docs</a>
             <?php if ($u = current_user()): ?>
                 <?php if ($u['is_admin']): ?><a href="/admin" class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-1">Admin</a><?php endif; ?>
@@ -94,6 +106,24 @@ addEventListener('DOMContentLoaded', () => document.querySelectorAll('time[data-
             <button onclick="toggleTheme()" aria-label="Toggle dark mode" class="rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">
                 <span class="dark:hidden">🌙</span><span class="hidden dark:inline">☀️</span>
             </button>
+        </nav>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur absolute w-full shadow-lg">
+        <nav class="flex flex-col px-4 py-4 gap-4 text-sm">
+            <a href="/docs" class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium">Docs</a>
+            <?php if ($u = current_user()): ?>
+                <?php if ($u['is_admin']): ?><a href="/admin" class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium">Admin</a><?php endif; ?>
+                <a href="/dashboard" class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium">Dashboard</a>
+                <form method="post" action="/logout" class="block w-full">
+                    <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                    <button class="text-left w-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium">Sign out</button>
+                </form>
+            <?php else: ?>
+                <a href="/login" class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium">Sign in</a>
+                <a href="/register" class="inline-block text-center rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 font-medium">Register</a>
+            <?php endif; ?>
         </nav>
     </div>
 </header>
