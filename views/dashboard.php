@@ -34,29 +34,31 @@
 
 <section class="mb-10">
     <h2 class="text-lg font-semibold mb-3">API tokens</h2>
-    <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800 mb-3">
-        <?php foreach ($tokens as $t): ?>
-        <div class="flex flex-wrap items-center gap-2 sm:gap-3 px-4 py-3">
-            <div class="min-w-0 flex-1">
-                <span class="font-medium"><?= e($t['name']) ?></span>
-                <code class="text-xs bg-slate-100 dark:bg-slate-800 rounded px-1.5 py-0.5 ml-2"><?= e($t['prefix']) ?>…</code>
-                <div class="text-xs text-slate-500 dark:text-slate-400">Created <?= dt_tag($t['created_at']) ?> · Last used <?= $t['last_used_at'] ? dt_tag($t['last_used_at']) : 'never' ?></div>
+    <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+        <div class="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 divide-y divide-slate-100 dark:divide-slate-800 mb-4">
+            <?php foreach ($tokens as $t): ?>
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3 px-4 py-3">
+                <div class="min-w-0 flex-1">
+                    <span class="font-medium"><?= e($t['name']) ?></span>
+                    <code class="text-xs bg-slate-100 dark:bg-slate-800 rounded px-1.5 py-0.5 ml-2"><?= e($t['prefix']) ?>…</code>
+                    <div class="text-xs text-slate-500 dark:text-slate-400">Created <?= dt_tag($t['created_at']) ?> · Last used <?= $t['last_used_at'] ? dt_tag($t['last_used_at']) : 'never' ?></div>
+                </div>
+                <form method="post" action="/tokens/revoke" onsubmit="return confirm('Revoke this token? Agents using it will lose access.')">
+                    <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="id" value="<?= e((string) $t['id']) ?>">
+                    <button class="text-xs rounded-md border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 px-2.5 py-1.5 hover:bg-red-50 dark:hover:bg-red-950/50">Revoke</button>
+                </form>
             </div>
-            <form method="post" action="/tokens/revoke" onsubmit="return confirm('Revoke this token? Agents using it will lose access.')">
-                <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
-                <input type="hidden" name="id" value="<?= e((string) $t['id']) ?>">
-                <button class="text-xs rounded-md border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 px-2.5 py-1.5 hover:bg-red-50 dark:hover:bg-red-950/50">Revoke</button>
-            </form>
+            <?php endforeach; ?>
+            <?php if (!$tokens): ?><div class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">No active tokens.</div><?php endif; ?>
         </div>
-        <?php endforeach; ?>
-        <?php if (!$tokens): ?><div class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">No active tokens.</div><?php endif; ?>
+        <form method="post" action="/tokens/create" class="flex flex-col sm:flex-row gap-2">
+            <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+            <input type="text" name="name" placeholder="Token name (e.g. laptop-claude)"
+                   class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button class="rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 text-sm font-medium">New token</button>
+        </form>
     </div>
-    <form method="post" action="/tokens/create" class="flex flex-col sm:flex-row gap-2">
-        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
-        <input type="text" name="name" placeholder="Token name (e.g. laptop-claude)"
-               class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        <button class="rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 text-sm font-medium">New token</button>
-    </form>
 </section>
 
 <section class="mb-10">
@@ -69,19 +71,19 @@
         <div>
             <label class="block text-sm font-medium mb-1" for="username">Username</label>
             <input type="text" id="username" name="username" value="<?= e($user['username'] ?? '') ?>" minlength="3" maxlength="50" pattern="[a-z0-9_-]{3,50}" placeholder="your-handle"
-                   class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                   class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
         <div class="grid sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium mb-1" for="current_password">Current password</label>
                 <input type="password" id="current_password" name="current_password" autocomplete="current-password"
                        placeholder="<?= $user['password_hash'] ? 'Required to change password' : 'No password set yet' ?>"
-                       class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                       class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1" for="new_password">New password</label>
                 <input type="password" id="new_password" name="new_password" minlength="8" autocomplete="new-password" placeholder="Leave blank to keep"
-                       class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                       class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
         </div>
         <button class="rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 text-sm font-medium">Save settings</button>
@@ -90,8 +92,10 @@
 
 <section>
     <h2 class="text-lg font-semibold mb-3 text-red-700 dark:text-red-400">Danger zone</h2>
-    <form method="post" action="/account/delete" onsubmit="return confirm('Delete your account, all notes, and all tokens? This cannot be undone.')">
-        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
-        <button class="rounded-lg border border-red-300 dark:border-red-900 text-red-600 dark:text-red-400 px-4 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-950/50">Delete account & all data</button>
-    </form>
+    <div class="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20 p-5 max-w-lg">
+        <form method="post" action="/account/delete" onsubmit="return confirm('Delete your account, all notes, and all tokens? This cannot be undone.')">
+            <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+            <button class="rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-2 text-sm hover:bg-red-100 dark:hover:bg-red-950/50 bg-white dark:bg-red-950/40 font-medium">Delete account & all data</button>
+        </form>
+    </div>
 </section>
