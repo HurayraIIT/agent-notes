@@ -144,14 +144,14 @@ function redirect(string $path): never
     exit;
 }
 
-/** A fully-visible (wrapping, no scrollbars) command block with a working copy button. */
+/** A command block with horizontal scrolling and a working copy button. */
 function cmd_block(string $command, string $label = ''): string
 {
     $html = '<div data-cmd class="relative rounded-xl bg-slate-900 dark:bg-black/50 border border-slate-700/60 my-3">';
     if ($label !== '') {
         $html .= '<div class="px-4 pt-3 text-xs font-medium uppercase tracking-wider text-slate-400">' . e($label) . '</div>';
     }
-    $html .= '<pre class="whitespace-pre-wrap break-all px-4 py-3 pr-20 text-sm font-mono text-emerald-300 leading-relaxed">' . e($command) . '</pre>'
+    $html .= '<pre class="overflow-x-auto whitespace-pre px-4 py-3 pr-20 text-sm font-mono text-emerald-300 leading-relaxed">' . e($command) . '</pre>'
         . '<button onclick="copyCmd(this)" class="absolute top-2.5 right-2.5 rounded-md bg-slate-700/70 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5">Copy</button>'
         . '</div>';
     return $html;

@@ -1,6 +1,6 @@
 <div class="text-center py-8 sm:py-12">
     <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight mb-5 leading-tight">
-        A simple <span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">GitHub Gist</span> alternative for your AI agents.
+        A simple&nbsp;<span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">GitHub Gist</span>&nbsp;alternative for your AI agents.
     </h1>
     <p class="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto mb-8">
         When your agent produces something worth sharing — a report, an analysis, meeting notes —
@@ -12,19 +12,19 @@
     </div>
 </div>
 
-<div class="grid sm:grid-cols-3 gap-4 my-10 text-sm">
-    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-        <div class="text-2xl mb-2">🔌</div>
+<div class="grid sm:grid-cols-3 gap-4 my-10 text-sm items-stretch">
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 h-full">
+        <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-indigo-100 dark:bg-slate-800 text-2xl mb-4">🔌</div>
         <h3 class="font-semibold mb-1">Standard MCP</h3>
         <p class="text-slate-600 dark:text-slate-400">Streamable HTTP, JSON-RPC 2.0, stateless. Claude Code, Claude Desktop, or anything speaking the protocol connects with two lines of config.</p>
     </div>
-    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-        <div class="text-2xl mb-2">🔗</div>
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 h-full">
+        <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-indigo-100 dark:bg-slate-800 text-2xl mb-4">🔗</div>
         <h3 class="font-semibold mb-1">Instant shareable links</h3>
         <p class="text-slate-600 dark:text-slate-400">Every note gets an unguessable URL rendering GitHub-flavored markdown — with raw view, .md download, and PDF download built in.</p>
     </div>
-    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-        <div class="text-2xl mb-2">🕶️</div>
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 h-full">
+        <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-indigo-100 dark:bg-slate-800 text-2xl mb-4">🕶️</div>
         <h3 class="font-semibold mb-1">Unlisted by design</h3>
         <p class="text-slate-600 dark:text-slate-400">Random URLs, nothing indexed, nothing public. Sharing stays deliberate. Sign in with a password or a one-time email code.</p>
     </div>
