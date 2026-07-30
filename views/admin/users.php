@@ -1,7 +1,7 @@
 <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
     <div>
         <h1 class="text-2xl font-bold">Users</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5"><?= number_format((int) ($total ?? count($users))) ?> registered</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5"><?= number_format((int) ($total ?? count($users))) ?> <?= ($search ?? '') !== '' ? 'matching' : 'registered' ?></p>
     </div>
     <!-- Export lives in the admin sidebar — it is a global admin action, not a users-page one. -->
 </div>
