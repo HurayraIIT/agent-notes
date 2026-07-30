@@ -120,6 +120,69 @@ function client_ip(): string
     return $_SERVER['REMOTE_ADDR'] ?? '';
 }
 
+// Keyboard focus ring, shared by every interactive element so the treatment stays identical
+// (and legible in both themes). Views are required inside view()/render(), so they can't see
+// index.php's $path — hence nav_active() re-parses the request instead.
+function focus_ring(): string
+{
+    return 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 '
+        . 'focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900';
+}
+
+/** Is the current request on $prefix (exact for '/', prefix-with-boundary otherwise)? */
+function nav_active(string $prefix): bool
+{
+    $path = rtrim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/', '/') ?: '/';
+    if ($prefix === '/') {
+        return $path === '/';
+    }
+    return $path === $prefix || str_starts_with($path, $prefix . '/');
+}
+
+/** Header/sidebar link carrying the current-page state. */
+function nav_link(string $href, string $label, string $extra = ''): string
+{
+    $active = nav_active($href);
+    $state = $active
+        ? 'text-slate-900 dark:text-white font-semibold'
+        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white';
+    return '<a href="' . e($href) . '"' . ($active ? ' aria-current="page"' : '')
+        . ' class="rounded ' . $state . ' ' . focus_ring() . ' ' . $extra . '">' . e($label) . '</a>';
+}
+
+// "Chrome on macOS" from a raw User-Agent.
+// ponytail: substring match over the common tokens, ordered so the overlapping ones (Edge/Opera
+// carry "Chrome"; iOS carries "Mac OS X"; Android carries "Linux") are tested first. An unrecognised
+// UA falls back to showing itself, so this can never invent a wrong answer. Swap for a real UA
+// parser only if admins start needing versions or exotic clients. See tests/ua_label.php.
+function ua_label(?string $ua): string
+{
+    $ua = trim((string) $ua);
+    if ($ua === '') {
+        return '—';
+    }
+    $browser = '';
+    foreach (['Edg' => 'Edge', 'OPR' => 'Opera', 'Firefox' => 'Firefox', 'HeadlessChrome' => 'Headless Chrome',
+              'Chrome' => 'Chrome', 'Safari' => 'Safari', 'curl' => 'curl', 'Python' => 'Python'] as $needle => $name) {
+        if (stripos($ua, $needle) !== false) {
+            $browser = $name;
+            break;
+        }
+    }
+    $os = '';
+    foreach (['Windows NT' => 'Windows', 'iPhone' => 'iOS', 'iPad' => 'iPadOS', 'CrOS' => 'ChromeOS',
+              'Android' => 'Android', 'Mac OS X' => 'macOS', 'Linux' => 'Linux'] as $needle => $name) {
+        if (stripos($ua, $needle) !== false) {
+            $os = $name;
+            break;
+        }
+    }
+    if ($browser !== '' && $os !== '') {
+        return $browser . ' on ' . $os;
+    }
+    return $browser ?: ($os ?: $ua);
+}
+
 function view(string $name, array $data = []): string
 {
     extract($data, EXTR_SKIP);
@@ -144,15 +207,16 @@ function redirect(string $path): never
     exit;
 }
 
-/** A command block with horizontal scrolling and a working copy button. */
+/** A command block that fully wraps (no horizontal scrolling) with a working copy button. */
 function cmd_block(string $command, string $label = ''): string
 {
     $html = '<div data-cmd class="relative rounded-xl bg-slate-900 dark:bg-black/50 border border-slate-700/60 my-3">';
     if ($label !== '') {
         $html .= '<div class="px-4 pt-3 text-xs font-medium uppercase tracking-wider text-slate-400">' . e($label) . '</div>';
     }
-    $html .= '<pre class="overflow-x-auto whitespace-pre px-4 py-3 pr-20 text-sm font-mono text-emerald-300 leading-relaxed">' . e($command) . '</pre>'
-        . '<button onclick="copyCmd(this)" class="absolute top-2.5 right-2.5 rounded-md bg-slate-700/70 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5">Copy</button>'
+    $html .= '<pre class="whitespace-pre-wrap break-all px-4 py-3 pr-20 text-sm font-mono text-emerald-300 leading-relaxed">' . e($command) . '</pre>'
+        . '<button onclick="copyCmd(this)" class="absolute top-2.5 right-2.5 rounded-md bg-slate-700/70 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5 '
+        . 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">Copy</button>'
         . '</div>';
     return $html;
 }

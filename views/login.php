@@ -6,9 +6,9 @@
         <div class="mb-4 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-sm px-4 py-3"><?= e($error) ?></div>
     <?php endif; ?>
 
-    <div class="flex rounded-lg border border-slate-300 dark:border-slate-700 p-1 mb-5 text-sm font-medium" role="tablist">
-        <button type="button" onclick="showTab('password')" id="tab-password" class="flex-1 rounded-md py-1.5">Password</button>
-        <button type="button" onclick="showTab('otp')" id="tab-otp" class="flex-1 rounded-md py-1.5">Email code</button>
+    <div class="flex gap-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1 mb-5 text-sm font-medium" role="tablist">
+        <button type="button" role="tab" onclick="showTab('password')" id="tab-password" aria-controls="pane-password">Password</button>
+        <button type="button" role="tab" onclick="showTab('otp')" id="tab-otp" aria-controls="pane-otp">Email code</button>
     </div>
 
     <div id="pane-password">
@@ -60,13 +60,18 @@
 </div>
 
 <script>
+// Segmented control: one recessed track, the active option rides on a raised pill.
 function showTab(name) {
-    const active = 'flex-1 rounded-md py-1.5 bg-indigo-600 text-white';
-    const idle = 'flex-1 rounded-md py-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800';
+    const base = 'flex-1 rounded-lg py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500';
+    const active = base + ' bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm';
+    const idle = base + ' text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/50';
     document.getElementById('pane-password').classList.toggle('hidden', name !== 'password');
     document.getElementById('pane-otp').classList.toggle('hidden', name !== 'otp');
-    document.getElementById('tab-password').className = name === 'password' ? active : idle;
-    document.getElementById('tab-otp').className = name === 'otp' ? active : idle;
+    for (const [id, on] of [['tab-password', name === 'password'], ['tab-otp', name === 'otp']]) {
+        const el = document.getElementById(id);
+        el.className = on ? active : idle;
+        el.setAttribute('aria-selected', String(on));
+    }
 }
 showTab(<?= json_encode($tab) ?>);
 </script>

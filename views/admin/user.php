@@ -19,7 +19,16 @@
             <div><dt class="inline text-slate-400 dark:text-slate-500">Verified:</dt> <dd class="inline"><?= $target['email_verified_at'] ? dt_tag($target['email_verified_at']) : 'not yet' ?></dd></div>
             <div><dt class="inline text-slate-400 dark:text-slate-500">Last login:</dt> <dd class="inline"><?= $target['last_login_at'] ? dt_tag($target['last_login_at']) : 'never' ?></dd></div>
             <div><dt class="inline text-slate-400 dark:text-slate-500">IP:</dt> <dd class="inline"><?= e($target['last_login_ip'] ?? '—') ?></dd></div>
-            <div><dt class="inline text-slate-400 dark:text-slate-500">Device:</dt> <dd class="inline break-all"><?= e($target['last_login_user_agent'] ?? '—') ?></dd></div>
+            <div>
+                <dt class="inline text-slate-400 dark:text-slate-500">Device:</dt>
+                <dd class="inline" title="<?= e($target['last_login_user_agent'] ?? '') ?>"><?= e(ua_label($target['last_login_user_agent'] ?? null)) ?></dd>
+                <?php if ($target['last_login_user_agent']): ?>
+                <details class="mt-1">
+                    <summary class="cursor-pointer text-xs text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 rounded <?= focus_ring() ?>">raw user agent</summary>
+                    <p class="mt-1 text-xs break-all font-mono text-slate-500 dark:text-slate-400"><?= e($target['last_login_user_agent']) ?></p>
+                </details>
+                <?php endif; ?>
+            </div>
         </dl>
     </div>
     <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">

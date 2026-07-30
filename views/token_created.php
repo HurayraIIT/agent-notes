@@ -21,7 +21,7 @@ $jsonCfg = json_encode([
     <div data-cmd class="relative rounded-xl bg-slate-900 dark:bg-black/50 border border-slate-700/60 mb-6">
         <div class="px-4 pt-3 text-xs font-medium uppercase tracking-wider text-slate-400">Your API token</div>
         <pre class="whitespace-pre-wrap break-all px-4 py-3 pr-20 text-sm font-mono text-emerald-300"><?= e($token) ?></pre>
-        <button onclick="copyCmd(this)" class="absolute top-2.5 right-2.5 rounded-md bg-slate-700/70 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5">Copy</button>
+        <button onclick="copyCmd(this)" class="absolute top-2.5 right-2.5 rounded-md bg-slate-700/70 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">Copy</button>
     </div>
 
     <h2 class="font-semibold mb-1">Connect Claude Code</h2>
@@ -30,5 +30,5 @@ $jsonCfg = json_encode([
     <h2 class="font-semibold mb-1 mt-6">Or any MCP client (JSON config)</h2>
     <?= cmd_block($jsonCfg) ?>
 
-    <a href="/dashboard" class="inline-block mt-6 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 font-medium">Continue to dashboard →</a>
+    <a href="/dashboard" class="inline-block mt-6 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900">Continue to dashboard →</a>
 </div>

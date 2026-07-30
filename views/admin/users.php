@@ -1,16 +1,16 @@
 <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-    <h1 class="text-2xl font-bold">Admin · Users</h1>
-    <form method="post" action="/admin/export">
-        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
-        <button class="rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 text-sm font-medium">⬇ Export database (.sql)</button>
-    </form>
+    <div>
+        <h1 class="text-2xl font-bold">Users</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5"><?= number_format((int) ($total ?? count($users))) ?> <?= ($search ?? '') !== '' ? 'matching' : 'registered' ?></p>
+    </div>
+    <!-- Export lives in the admin sidebar — it is a global admin action, not a users-page one. -->
 </div>
 
 <div class="mb-4">
     <form method="get" action="/admin" class="flex flex-1">
         <input type="text" name="q" value="<?= e($search ?? '') ?>" placeholder="Search users by email or username..."
                class="w-full max-w-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        <button type="submit" class="ml-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-2 text-sm font-medium">Search</button>
+        <button type="submit" class="ml-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-2 text-sm font-medium <?= focus_ring() ?>">Search</button>
     </form>
 </div>
 
