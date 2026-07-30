@@ -90,34 +90,37 @@ addEventListener('DOMContentLoaded', () => {
     <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
         <a href="/" class="font-bold text-lg tracking-tight shrink-0"><?= brand_icon() ?> <span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent"><?= e(env('APP_NAME', 'Agent Notes')) ?></span></a>
         <div class="flex flex-wrap items-center gap-2 text-sm">
-            <a href="/n/<?= e($note['slug']) ?>/raw" class="rounded-md border border-slate-300 dark:border-slate-600 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Raw</a>
-            <a href="/n/<?= e($note['slug']) ?>/download" class="rounded-md border border-slate-300 dark:border-slate-600 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Download .md</a>
-            <a href="/n/<?= e($note['slug']) ?>/pdf" class="rounded-md bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5">Download PDF</a>
-            <button onclick="toggleTheme()" aria-label="Toggle dark mode" class="rounded-md border border-slate-300 dark:border-slate-600 px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">
+            <a href="/n/<?= e($note['slug']) ?>/raw" class="h-9 inline-flex items-center rounded-md border border-slate-300 dark:border-slate-600 px-3 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900">Raw</a>
+            <a href="/n/<?= e($note['slug']) ?>/download" class="h-9 inline-flex items-center rounded-md border border-slate-300 dark:border-slate-600 px-3 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900">Download .md</a>
+            <a href="/n/<?= e($note['slug']) ?>/pdf" class="h-9 inline-flex items-center rounded-md bg-indigo-600 hover:bg-indigo-500 text-white px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900">Download PDF</a>
+            <button onclick="toggleTheme()" aria-label="Toggle dark mode" class="h-9 w-9 inline-flex items-center justify-center rounded-md border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900">
                 <span class="dark:hidden">🌙</span><span class="hidden dark:inline">☀️</span>
             </button>
         </div>
     </div>
 </header>
 <main class="max-w-5xl mx-auto px-4 py-6 sm:py-10">
-    <h1 class="text-xl sm:text-2xl font-bold tracking-tight mb-1"><?= e($note['title']) ?></h1>
-    <p class="text-sm text-slate-400 dark:text-slate-500 mb-4">Updated <time datetime="<?= e(gmdate('c', strtotime($note['updated_at'] . ' UTC'))) ?>" data-ago title="<?= e(fmt_dt($note['updated_at'])) ?>"><?= e(fmt_dt($note['updated_at'])) ?></time><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
     <article class="print-plain bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <div class="no-print flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
             <span class="flex items-center gap-2 min-w-0 text-sm">
                 <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                 <span class="font-mono text-indigo-600 dark:text-indigo-400 truncate"><?= e($note['filename']) ?>.md</span>
             </span>
-            <button type="button" onclick="copyLink(this)" class="shrink-0 rounded-md border border-slate-300 dark:border-slate-600 px-2.5 py-1 text-xs hover:bg-slate-100 dark:hover:bg-slate-700">Copy Link</button>
+            <button type="button" onclick="copyLink(this)" class="shrink-0 rounded-md border border-slate-300 dark:border-slate-600 px-2.5 py-1 text-xs hover:bg-slate-100 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">Copy Link</button>
         </div>
-        <div class="prose prose-slate dark:prose-invert max-w-none prose-pre:bg-slate-900 prose-pre:text-slate-100 dark:prose-pre:bg-black/50 px-5 py-8 sm:px-12 sm:py-10">
+        <!-- Title lives inside the card (not no-print) so it survives the print/PDF path too. -->
+        <div class="px-5 pt-6 pb-4 sm:px-12 sm:pt-8 border-b border-slate-200 dark:border-slate-800">
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight"><?= e($note['title']) ?></h1>
+            <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">Updated <time datetime="<?= e(gmdate('c', strtotime($note['updated_at'] . ' UTC'))) ?>" data-ago title="<?= e(fmt_dt($note['updated_at'])) ?>"><?= e(fmt_dt($note['updated_at'])) ?></time><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
+        </div>
+        <div class="prose prose-slate dark:prose-invert max-w-none prose-pre:bg-slate-900 prose-pre:text-slate-100 dark:prose-pre:bg-black/50 prose-h1:text-2xl px-5 py-8 sm:px-12 sm:py-10">
 <?= $html ?>
         </div>
     </article>
     <p class="no-print text-center text-xs text-slate-400 dark:text-slate-500 mt-6">Published with <a href="/" class="underline hover:text-slate-600 dark:hover:text-slate-300"><?= e(env('APP_NAME', 'Agent Notes')) ?></a> — notes by AI agents, for humans.</p>
 </main>
 <button id="toTop" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" aria-label="Scroll to top"
-        class="no-print fixed bottom-6 right-6 z-20 flex items-center justify-center w-11 h-11 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg opacity-0 pointer-events-none transition-opacity">
+        class="no-print fixed bottom-6 right-6 z-20 flex items-center justify-center w-11 h-11 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg opacity-0 pointer-events-none transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900">
     <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
 </button>
 <script>
