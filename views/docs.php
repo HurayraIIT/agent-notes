@@ -64,5 +64,5 @@
 
 <div class="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 text-center">
     <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Enjoying Agent Notes? You can support its development:</p>
-    <a href="https://www.buymeacoffee.com/hurayraiit" target="_blank" rel="noopener" class="inline-block"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me a Coffee" style="height: 60px !important;width: 217px !important;"></a>
+    <a href="https://www.buymeacoffee.com/hurayraiit" target="_blank" rel="noopener" class="inline-block rounded-xl <?= focus_ring() ?>"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me a Coffee" class="rounded-xl dark:brightness-[.82] dark:contrast-[.92] dark:saturate-[.85] dark:ring-1 dark:ring-white/10" style="height: 60px !important;width: 217px !important;"></a>
 </div>
