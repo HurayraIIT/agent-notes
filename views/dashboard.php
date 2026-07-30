@@ -35,7 +35,7 @@
 <section class="mb-10">
     <h2 class="text-lg font-semibold mb-3">API tokens</h2>
     <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-        <div class="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 divide-y divide-slate-100 dark:divide-slate-800 mb-4">
+        <div class="<?= $tokens ? 'rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 divide-y divide-slate-100 dark:divide-slate-800' : '' ?> mb-4">
             <?php foreach ($tokens as $t): ?>
             <div class="flex flex-wrap items-center gap-2 sm:gap-3 px-4 py-3">
                 <div class="min-w-0 flex-1">
@@ -50,7 +50,13 @@
                 </form>
             </div>
             <?php endforeach; ?>
-            <?php if (!$tokens): ?><div class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">No active tokens.</div><?php endif; ?>
+            <?php if (!$tokens): ?>
+            <div class="rounded-lg border border-dashed border-slate-300 dark:border-slate-700 px-4 py-6 text-center">
+                <svg class="w-6 h-6 mx-auto mb-2 text-slate-400 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="3.5"/><line x1="10" y1="13" x2="20" y2="3"/><line x1="17" y1="6" x2="19" y2="8"/></svg>
+                <p class="text-sm text-slate-500 dark:text-slate-400">No active tokens yet.</p>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Create one below to connect an agent.</p>
+            </div>
+            <?php endif; ?>
         </div>
         <form method="post" action="/tokens/create" class="flex flex-col sm:flex-row gap-2">
             <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
@@ -91,11 +97,12 @@
 </section>
 
 <section>
-    <h2 class="text-lg font-semibold mb-3 text-red-700 dark:text-red-400">Danger zone</h2>
+    <h2 class="text-lg font-semibold mb-3 text-slate-900 dark:text-slate-200">Danger zone</h2>
     <div class="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20 p-5 max-w-lg">
+        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">Deleting your account removes every note, token and session. This cannot be undone.</p>
         <form method="post" action="/account/delete" onsubmit="return confirm('Delete your account, all notes, and all tokens? This cannot be undone.')">
             <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
-            <button class="rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-2 text-sm hover:bg-red-100 dark:hover:bg-red-950/50 bg-white dark:bg-red-950/40 font-medium">Delete account & all data</button>
+            <button class="rounded-lg border border-red-300 dark:border-red-600 bg-white dark:bg-red-950/40 text-red-600 dark:text-red-300 px-4 py-2 text-sm font-medium transition-colors hover:bg-red-600 hover:border-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:border-red-500 dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950">Delete account & all data</button>
         </form>
     </div>
 </section>
