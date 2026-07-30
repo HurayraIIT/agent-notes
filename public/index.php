@@ -374,12 +374,43 @@ if ($path === '/webmcp' && $method === 'POST') {
 // ---- Admin ----
 if ($path === '/admin') {
     require_admin();
-    $users = db()->query(
-        'SELECT u.*, COUNT(n.id) AS note_count, COALESCE(SUM(n.views), 0) AS total_views
+    
+    $page = max(1, (int) ($_GET['p'] ?? 1));
+    $limit = 50;
+    $offset = ($page - 1) * $limit;
+    $search = trim($_GET['q'] ?? '');
+    
+    $where = '';
+    $params = [];
+    if ($search !== '') {
+        $where = 'WHERE u.email LIKE ? OR u.username LIKE ?';
+        $params[] = '%' . $search . '%';
+        $params[] = '%' . $search . '%';
+    }
+
+    $stmt = db()->prepare("SELECT COUNT(*) FROM users u $where");
+    $stmt->execute($params);
+    $total = (int) $stmt->fetchColumn();
+    $pages = max(1, (int) ceil($total / $limit));
+
+    $stmt = db()->prepare(
+        "SELECT u.*, COUNT(n.id) AS note_count, COALESCE(SUM(n.views), 0) AS total_views
          FROM users u LEFT JOIN notes n ON n.user_id = u.id
-         GROUP BY u.id ORDER BY u.created_at DESC'
-    )->fetchAll();
-    render('admin/users', ['title' => 'Admin', 'users' => $users, 'export_error' => $_GET['export_error'] ?? null]);
+         $where
+         GROUP BY u.id ORDER BY u.created_at DESC LIMIT $limit OFFSET $offset"
+    );
+    $stmt->execute($params);
+    $users = $stmt->fetchAll();
+
+    render('admin/users', [
+        'title' => 'Admin', 
+        'users' => $users, 
+        'export_error' => $_GET['export_error'] ?? null,
+        'page' => $page,
+        'pages' => $pages,
+        'search' => $search,
+        'total' => $total
+    ]);
 }
 
 if (preg_match('#^/admin/user/(\d+)$#', $path, $m)) {

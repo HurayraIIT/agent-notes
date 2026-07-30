@@ -1,5 +1,14 @@
 <a href="/admin" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">← All users</a>
-<h1 class="text-2xl font-bold mt-2 mb-1"><?= e($target['email']) ?></h1>
+<div class="flex flex-wrap items-center justify-between gap-3 mt-2 mb-1">
+    <h1 class="text-2xl font-bold"><?= e($target['email']) ?></h1>
+    <?php if (!$target['is_admin']): ?>
+    <form method="post" action="/admin/user/delete" onsubmit="return confirm('Delete this user and ALL their notes, tokens and sessions?')">
+        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="id" value="<?= e((string) $target['id']) ?>">
+        <button class="rounded-lg border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 px-3 py-1.5 text-sm hover:bg-red-50 dark:hover:bg-red-950/50 font-medium">Delete User</button>
+    </form>
+    <?php endif; ?>
+</div>
 <p class="text-sm text-slate-500 dark:text-slate-400 mb-6"><?= e($target['username'] ? '@' . $target['username'] : 'no username set') ?> · <?= $target['email_verified_at'] ? 'verified' : 'unverified' ?></p>
 
 <div class="grid sm:grid-cols-2 gap-4 mb-8 text-sm">
