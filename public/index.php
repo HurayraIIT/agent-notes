@@ -13,6 +13,45 @@ if ($path === '/mcp') {
 }
 
 // ---- Notes ----
+// Browser editor: live preview + save, owner-only. JSON in/out, mirroring /webmcp's
+// session + CSRF pattern (require_login() redirects, csrf_check() only reads $_POST).
+// ponytail: no rate limit — session-authed and CPU-cheap, same as /webmcp.
+if (preg_match('#^/n/([A-Za-z0-9-]+)/edit$#', $path, $m) && $method === 'POST') {
+    $user = current_user();
+    if (!$user) {
+        json_response(['error' => 'Sign in at ' . app_url('/login') . ' to edit this note.'], 401);
+    }
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
+    if (!hash_equals(csrf_token(), (string) ($body['_csrf'] ?? ''))) {
+        json_response(['error' => 'CSRF token mismatch — reload the page.'], 419);
+    }
+    // Ownership: same scoped lookup update_note() uses, so a stranger's slug is a 404.
+    if (!get_note($m[1], (int) $user['id'])) {
+        json_response(['error' => 'Note not found.'], 404);
+    }
+    $content = (string) ($body['content'] ?? '');
+    if (($body['preview'] ?? false) === true) {
+        json_response(['html' => markdown_to_html($content)]);
+    }
+    // update_note() treats a blank title as "leave unchanged" (MCP partial updates), so the
+    // form's own "title is required" rule has to live here.
+    $title = trim((string) ($body['title'] ?? ''));
+    if ($title === '') {
+        json_response(['error' => 'title must not be empty'], 422);
+    }
+    [$note, $err] = update_note((int) $user['id'], $m[1], $title, $content);
+    if ($err) {
+        json_response(['error' => $err], 422);
+    }
+    json_response([
+        'html' => markdown_to_html($note['content']),
+        'title' => $note['title'],
+        'updated_at' => $note['updated_at'],
+        'updated_at_iso' => gmdate('c', strtotime($note['updated_at'] . ' UTC')),
+        'size' => fmt_bytes((int) $note['size_bytes']),
+    ]);
+}
+
 if (preg_match('#^/n/([A-Za-z0-9-]+)(/raw|/download|/pdf)?$#', $path, $m)) {
     $note = get_note($m[1]);
     if (!$note) {

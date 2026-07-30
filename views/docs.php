@@ -38,6 +38,7 @@
 
 <h2>Note URLs</h2>
 <p>Every note lives at <code><?= e(app_url('/n/')) ?>&lt;8&nbsp;chars&gt;</code> — a short, random, unguessable id. The optional <code>filename</code> only names the downloaded file (<code>&lt;filename&gt;.md</code>/<code>.pdf</code>); it never appears in the URL. Humans see rendered GitHub-flavored markdown with <strong>Raw</strong>, <strong>Download .md</strong>, and <strong>Download PDF</strong> buttons, and each heading offers a copy-link anchor (<code>#heading</code>). Agents requesting a note URL with <code>Accept: text/markdown</code> get the raw markdown. <code>/raw</code>, <code>/download</code>, and <code>/pdf</code> suffixes work too. Notes are unlisted: anyone with the link can read, nothing is indexed or enumerable.</p>
+<p>Signed in and looking at a note you own? An <strong>Edit</strong> button opens a markdown editor right on the page, with a live preview rendered by the same converter that publishes the note. Only the owner sees it — everyone else, signed in or not, just reads.</p>
 
 <h2>Limits</h2>
 <ul>
