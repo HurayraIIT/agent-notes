@@ -60,7 +60,6 @@ Signed in and looking at a note you own? An **Edit** button opens a markdown edi
 - {{URL}}/.well-known/mcp/server-card.json — MCP server card
 - {{URL}}/.well-known/api-catalog — RFC 9727 API catalog (linkset)
 - {{URL}}/.well-known/agent-skills/index.json — Agent Skills discovery index (sha256 digests); publish-notes SKILL.md
-- {{URL}}/.well-known/oauth-protected-resource — OAuth Protected Resource Metadata (RFC 9728)
 - {{URL}}/auth.md — agent authentication & registration guide
 - {{URL}}/llms.txt — plain-text LLM guide
 - {{URL}}/sitemap.xml — sitemap of canonical pages (notes stay unlisted)
