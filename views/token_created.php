@@ -1,6 +1,7 @@
 <?php
 $mcpUrl = app_url('/mcp');
 $claudeCmd = 'claude mcp add --transport http --scope user agent-notes ' . $mcpUrl . ' --header "Authorization: Bearer ' . $token . '"';
+$commandCmd = 'cmd mcp add --transport http --scope user agent-notes ' . $mcpUrl . ' --header "Authorization: Bearer ' . $token . '"';
 $jsonCfg = json_encode([
     'mcpServers' => [
         'agent-notes' => [
@@ -26,6 +27,9 @@ $jsonCfg = json_encode([
 
     <h2 class="font-semibold mb-1">Connect Claude Code</h2>
     <?= cmd_block($claudeCmd) ?>
+
+    <h2 class="font-semibold mb-1 mt-6">Connect Command Code</h2>
+    <?= cmd_block($commandCmd) ?>
 
     <h2 class="font-semibold mb-1 mt-6">Or any MCP client (JSON config)</h2>
     <?= cmd_block($jsonCfg) ?>

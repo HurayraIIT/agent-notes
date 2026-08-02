@@ -13,7 +13,14 @@ claude mcp add --transport http --scope user agent-notes https://your-domain.tes
   --header "Authorization: Bearer <your-token>"
 ```
 
-**Any MCP client (raw JSON config)**
+**Command Code**
+
+```bash
+cmd mcp add --transport http --scope user agent-notes https://your-domain.test/mcp \
+  --header "Authorization: Bearer <your-token>"
+```
+
+**Any MCP client (raw JSON config)** — Command Code's config file names the key `transport` instead of `type`; everything else is identical.
 
 ```json
 {

@@ -113,8 +113,11 @@ addEventListener('DOMContentLoaded', () => {
     </div>
 </header>
 <main class="max-w-5xl mx-auto px-4 py-6 sm:py-10">
-    <article class="print-plain bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div class="no-print flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
+<!-- Dark reading surfaces use GitHub's canvas hexes, not slate: card/editor #0d1117, pre blocks #161b22 (one step
+     lighter, so code separates), inner strips a neutral white/5. Slate is blue-tinted and clashes with the
+     github-dark hljs theme and the gist palette in the <style> above. The page/header stay slate — they frame, not hold text. -->
+    <article class="print-plain bg-white dark:bg-[#0d1117] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="no-print flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-white/5">
             <span class="flex items-center gap-2 min-w-0 text-sm">
                 <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                 <span class="font-mono text-indigo-600 dark:text-indigo-400 truncate"><?= e($note['filename']) ?>.md</span>
@@ -126,13 +129,13 @@ addEventListener('DOMContentLoaded', () => {
             <h1 id="noteTitle" class="text-xl sm:text-2xl font-bold tracking-tight"><?= e($note['title']) ?></h1>
             <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">Updated <time id="noteUpdated" datetime="<?= e(gmdate('c', strtotime($note['updated_at'] . ' UTC'))) ?>" data-ago title="<?= e(fmt_dt($note['updated_at'])) ?>"><?= e(fmt_dt($note['updated_at'])) ?></time><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
         </div>
-        <div id="noteProse" class="prose prose-slate dark:prose-invert max-w-none prose-pre:bg-slate-900 prose-pre:text-slate-100 dark:prose-pre:bg-black/50 prose-h1:text-2xl px-5 py-8 sm:px-12 sm:py-10">
+        <div id="noteProse" class="prose prose-slate dark:prose-invert max-w-none prose-pre:bg-slate-900 prose-pre:text-slate-100 dark:prose-pre:bg-[#161b22] prose-h1:text-2xl px-5 py-8 sm:px-12 sm:py-10">
 <?= $html ?>
         </div>
     </article>
     <?php if ($can_edit): ?>
-    <section id="editor" class="no-print hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div class="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
+    <section id="editor" class="no-print hidden bg-white dark:bg-[#0d1117] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-white/5">
             <!-- Filename is hidden under sm: it wraps to a second line and crowds the Write/Preview toggle. -->
             <span class="text-sm font-medium">Editing <span class="hidden sm:inline font-mono text-indigo-600 dark:text-indigo-400"><?= e($note['filename']) ?>.md</span></span>
             <!-- Side-by-side is unusable under md, so small screens get a Write/Preview toggle instead. -->
@@ -150,10 +153,10 @@ addEventListener('DOMContentLoaded', () => {
             <textarea id="editContent" spellcheck="false" aria-label="Note content (markdown)"
                       class="block md:block w-full min-w-0 h-[50vh] md:h-[60vh] min-h-[18rem] resize-none px-4 py-4 sm:px-5 font-mono text-sm leading-6 bg-transparent focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"><?= e($note['content']) ?></textarea>
             <div id="panePreview" class="hidden md:block min-w-0 h-[50vh] md:h-[60vh] min-h-[18rem] overflow-auto">
-                <div id="previewProse" class="prose prose-slate dark:prose-invert max-w-none prose-pre:bg-slate-900 prose-pre:text-slate-100 dark:prose-pre:bg-black/50 prose-h1:text-2xl px-4 py-4 sm:px-5"></div>
+                <div id="previewProse" class="prose prose-slate dark:prose-invert max-w-none prose-pre:bg-slate-900 prose-pre:text-slate-100 dark:prose-pre:bg-[#161b22] prose-h1:text-2xl px-4 py-4 sm:px-5"></div>
             </div>
         </div>
-        <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
+        <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-white/5">
             <p id="editStatus" class="text-xs text-slate-500 dark:text-slate-400 min-w-0 basis-full sm:basis-auto break-words"></p>
             <div class="flex items-center gap-2 text-sm ml-auto">
                 <button type="button" onclick="closeEditor()" class="h-9 inline-flex items-center rounded-md border border-slate-300 dark:border-slate-600 px-3 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900">Cancel</button>

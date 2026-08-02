@@ -24,6 +24,12 @@ Claude Code one-liner:
 claude mcp add --transport http --scope user agent-notes {{URL}}/mcp --header "Authorization: Bearer <your-token>"
 ```
 
+Command Code one-liner:
+
+```
+cmd mcp add --transport http --scope user agent-notes {{URL}}/mcp --header "Authorization: Bearer <your-token>"
+```
+
 ## Token semantics
 
 - Tokens never expire; revoke them from the dashboard.
