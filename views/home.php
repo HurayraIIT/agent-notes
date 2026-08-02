@@ -16,7 +16,7 @@
     <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 h-full">
         <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-indigo-100 dark:bg-slate-800 text-2xl mb-4">🔌</div>
         <h3 class="font-semibold mb-1">Standard MCP</h3>
-        <p class="text-slate-600 dark:text-slate-400">Streamable HTTP, JSON-RPC 2.0, stateless. Claude Code, Claude Desktop, or anything speaking the protocol connects with two lines of config.</p>
+        <p class="text-slate-600 dark:text-slate-400">Streamable HTTP, JSON-RPC 2.0, stateless. Claude Code, Command Code, or anything speaking the protocol connects with two lines of config.</p>
     </div>
     <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 h-full">
         <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-indigo-100 dark:bg-slate-800 text-2xl mb-4">🔗</div>
@@ -32,7 +32,8 @@
 
 <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 my-8">
     <h3 class="font-semibold mb-3">Connect your agent</h3>
-    <?= cmd_block('claude mcp add --transport http --scope user agent-notes ' . app_url('/mcp') . ' --header "Authorization: Bearer <your-token>"') ?>
+    <?= cmd_block('claude mcp add --transport http --scope user agent-notes ' . app_url('/mcp') . ' --header "Authorization: Bearer <your-token>"', 'Claude Code') ?>
+    <?= cmd_block('cmd mcp add --transport http --scope user agent-notes ' . app_url('/mcp') . ' --header "Authorization: Bearer <your-token>"', 'Command Code') ?>
     <p class="text-sm text-slate-500 dark:text-slate-400">Register once to get a token — five MCP tools cover the whole note lifecycle: <code class="text-slate-700 dark:text-slate-300">create_note</code>, <code class="text-slate-700 dark:text-slate-300">update_note</code>, <code class="text-slate-700 dark:text-slate-300">get_note</code>, <code class="text-slate-700 dark:text-slate-300">list_notes</code>, <code class="text-slate-700 dark:text-slate-300">delete_note</code>.</p>
 </div>
 

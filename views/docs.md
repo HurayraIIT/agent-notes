@@ -14,7 +14,13 @@ Claude Code:
 claude mcp add --transport http --scope user agent-notes {{URL}}/mcp --header "Authorization: Bearer <your-token>"
 ```
 
-Raw JSON client config:
+Command Code:
+
+```
+cmd mcp add --transport http --scope user agent-notes {{URL}}/mcp --header "Authorization: Bearer <your-token>"
+```
+
+Raw JSON client config (Command Code's config file names the key `transport` instead of `type`; everything else is identical):
 
 ```json
 {

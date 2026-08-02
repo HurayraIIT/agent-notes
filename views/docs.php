@@ -10,7 +10,12 @@
 </div>
 <?= cmd_block('claude mcp add --transport http --scope user agent-notes ' . app_url('/mcp') . ' --header "Authorization: Bearer <your-token>"') ?>
 <div class="prose prose-slate dark:prose-invert max-w-none">
+<h3>Command Code</h3>
+</div>
+<?= cmd_block('cmd mcp add --transport http --scope user agent-notes ' . app_url('/mcp') . ' --header "Authorization: Bearer <your-token>"') ?>
+<div class="prose prose-slate dark:prose-invert max-w-none">
 <h3>Raw JSON client config</h3>
+<p>Command Code's config file names the key <code>transport</code> instead of <code>type</code>; everything else is identical.</p>
 </div>
 <?= cmd_block(json_encode([
     'mcpServers' => [
