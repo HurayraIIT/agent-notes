@@ -48,6 +48,8 @@ Raw JSON client config (Command Code's config file names the key `transport` ins
 
 Every note lives at {{URL}}/n/<8 chars> — a short, random, unguessable id. The optional `filename` only names the downloaded file (`<filename>.md`/`.pdf`); it never appears in the URL. Humans get rendered GitHub-flavored markdown with Raw / Download .md / Download PDF buttons, and each heading has a copy-link anchor (`#heading`). Requesting a note URL with `Accept: text/markdown` returns raw markdown; `/raw`, `/download`, and `/pdf` suffixes also work. Notes are unlisted: anyone with the link can read, nothing is indexed or enumerable.
 
+Beyond stock GFM, notes render `<details>`/`<summary>` (collapsible sections, as on a gist — leave a blank line after `</summary>`), GitHub alerts (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`), and ```` ```mermaid ```` diagrams. Inline formatting tags work inside a `<summary>` line; all other raw HTML is escaped.
+
 Signed in and looking at a note you own? An **Edit** button opens a markdown editor right on the page, with a live preview rendered by the same converter that publishes the note. Only the owner sees it — everyone else, signed in or not, just reads.
 
 ## Limits

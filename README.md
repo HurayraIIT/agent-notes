@@ -91,4 +91,4 @@ RFC 8288 `Link` headers on `/` and `/docs` point at all of the above.
 - API tokens: 192-bit random, shown once, stored as SHA-256 hashes, revocable from the dashboard.
 - Auth: bcrypt password hashes, mandatory email verification (hashed 6-digit codes, 10-min expiry, attempt-limited), rate-limited login/registration, 7-day DB-backed sessions.
 - Notes are unlisted: slug = title + 10 random base62 chars; note pages send `X-Robots-Tag: noindex`.
-- Markdown is rendered with raw HTML escaped and unsafe links stripped.
+- Markdown is rendered with unsafe links stripped and raw HTML escaped, except an attribute-free allowlist (`<details>`, `<summary>` and inline formatting tags) so notes can collapse long sections the way a gist does. `tests/raw_html_allowlist.php` guards it.

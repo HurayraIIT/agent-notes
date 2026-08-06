@@ -45,6 +45,11 @@ function generate_pdf(array $note): string
         blockquote { border-left: 3pt solid #cbd5e1; margin-left: 0; padding-left: 10pt; color: #475569; }
         a { color: #4f46e5; }
         img { max-width: 100%; }
+        /* The dompdf default sheet already makes these display:block and implements no
+           disclosure behaviour, so every <details> section prints expanded — right for a PDF. */
+        summary { font-weight: bold; }
+        .md-alert { border-left: 3pt solid #cbd5e1; margin-left: 0; padding-left: 10pt; }
+        .md-alert-title { font-weight: bold; }
         </style></head><body>'
         . '<h1 class="doc-title">' . e($note['title']) . '</h1>'
         . '<p class="doc-meta">Updated ' . e(fmt_dt($note['updated_at'])) . ' · ' . e(note_url($note['slug'])) . '</p>'
