@@ -24,6 +24,7 @@ tailwind.config = { darkMode: 'class' };
 function toggleTheme() {
     const dark = document.documentElement.classList.toggle('dark');
     localStorage.theme = dark ? 'dark' : 'light';
+    window.renderMermaid?.(document.body);   // diagrams are baked SVG — they need a re-render
 }
 </script>
 <style>
@@ -57,6 +58,35 @@ function toggleTheme() {
 .prose :not(pre) > code::before, .prose :not(pre) > code::after { content: none; }
 .prose :not(pre) > code { background: rgba(175,184,193,.2); padding: .2em .4em; border-radius: 6px; font-size: 85%; font-weight: 400; }
 .dark .prose :not(pre) > code { background: rgba(110,118,129,.4); }
+/* <details>/<summary> reach the browser through the raw-HTML allowlist in src/markdown.php.
+   Typography styles neither, so they get the gist treatment here — borderless, like GitHub. */
+.prose details { margin: 1em 0; }
+.prose summary { cursor: pointer; font-weight: 600; }
+.prose summary::marker { color: #57606a; }
+.dark .prose summary::marker { color: #8b949e; }
+.prose summary:hover { color: #0969da; }
+.dark .prose summary:hover { color: #4493f8; }
+.prose details[open] > summary { margin-bottom: .8em; }
+/* Typography's margin on the first/last child reads as dead space inside the disclosure. */
+.prose details > *:not(summary):first-of-type { margin-top: 0; }
+.prose details > *:last-child { margin-bottom: 0; }
+/* GitHub alerts (> [!NOTE] …) — markup comes from GithubAlertRenderer, never from note content. */
+.prose .md-alert { border-left: .25em solid; padding: 0 1em; margin: 1em 0; }
+.prose .md-alert > *:first-child { margin-top: 0; }
+.prose .md-alert > *:last-child { margin-bottom: 0; }
+.prose .md-alert-title { font-weight: 600; color: inherit; margin-bottom: .4em; }
+.prose .md-alert-note { border-color: #0969da; } .prose .md-alert-note .md-alert-title { color: #0969da; }
+.prose .md-alert-tip { border-color: #1a7f37; } .prose .md-alert-tip .md-alert-title { color: #1a7f37; }
+.prose .md-alert-important { border-color: #8250df; } .prose .md-alert-important .md-alert-title { color: #8250df; }
+.prose .md-alert-warning { border-color: #9a6700; } .prose .md-alert-warning .md-alert-title { color: #9a6700; }
+.prose .md-alert-caution { border-color: #cf222e; } .prose .md-alert-caution .md-alert-title { color: #cf222e; }
+.dark .prose .md-alert-note { border-color: #4493f8; } .dark .prose .md-alert-note .md-alert-title { color: #4493f8; }
+.dark .prose .md-alert-tip { border-color: #3fb950; } .dark .prose .md-alert-tip .md-alert-title { color: #3fb950; }
+.dark .prose .md-alert-important { border-color: #ab7df8; } .dark .prose .md-alert-important .md-alert-title { color: #ab7df8; }
+.dark .prose .md-alert-warning { border-color: #d29922; } .dark .prose .md-alert-warning .md-alert-title { color: #d29922; }
+.dark .prose .md-alert-caution { border-color: #f85149; } .dark .prose .md-alert-caution .md-alert-title { color: #f85149; }
+/* Mermaid replaces the <pre> contents with an SVG — drop the code-block chrome it inherits. */
+.prose pre.mermaid { background: transparent; padding: 0; text-align: center; }
 </style>
 <!-- ponytail: one dark hljs theme for both modes — pre blocks are always dark (prose-pre:bg-slate-900) -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/github-dark.min.css">
@@ -201,6 +231,7 @@ function decorateProse(root, withAnchors) {
     if (window.hljs) {
         root.querySelectorAll('pre code:not([data-highlighted])').forEach(el => hljs.highlightElement(el));
     }
+    renderMermaid(root);
     if (!withAnchors) return;
     const icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
     const seen = {};
@@ -227,12 +258,48 @@ function decorateProse(root, withAnchors) {
         h.appendChild(a);
     });
 }
+// Renders ```mermaid fences. The library is ~1 MB, so it is fetched on demand — a note without
+// a diagram never pays for it. The source is stashed in data-src because mermaid replaces the
+// <pre> contents with an SVG, and a theme flip has to re-render from the original text.
+function renderMermaid(root) {
+    const nodes = [...root.querySelectorAll('pre.mermaid')];
+    if (!nodes.length) return;
+    if (!window.mermaid) {
+        window.mermaidLoading ||= new Promise(done => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
+            s.onload = s.onerror = done;                 // a CDN failure leaves the source visible
+            document.head.appendChild(s);
+        });
+        window.mermaidLoading.then(() => renderMermaid(root));
+        return;
+    }
+    nodes.forEach(el => {
+        if (el.dataset.src === undefined) { el.dataset.src = el.textContent; return; }
+        el.textContent = el.dataset.src;                 // re-render (theme flip)
+        el.removeAttribute('data-processed');
+    });
+    // securityLevel 'strict' is not optional — mermaid has a history of XSS via diagram text.
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default' });
+    mermaid.run({ nodes, suppressErrors: true });
+}
+// A closed <details> prints collapsed, and CSS cannot override it — the children live in the
+// UA shadow slot. Expand for print, restore after, so a PDF-via-print keeps every section.
+addEventListener('beforeprint', () => document.querySelectorAll('details:not([open])')
+    .forEach(d => { d.dataset.printClosed = '1'; d.open = true; }));
+addEventListener('afterprint', () => document.querySelectorAll('details[data-print-closed]')
+    .forEach(d => { d.open = false; delete d.dataset.printClosed; }));
 addEventListener('DOMContentLoaded', () => {
     decorateProse(document.getElementById('noteProse'), true);
     // ids exist now — native hash scroll already ran, so do it ourselves
     if (location.hash.length > 1) {
         const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-        if (el) el.scrollIntoView();
+        if (el) {
+            // A heading inside a collapsed <details> is invisible — open its ancestors first,
+            // or the deep link silently scrolls to nothing.
+            for (let d = el.closest('details'); d; d = d.parentElement.closest('details')) d.open = true;
+            el.scrollIntoView();
+        }
     }
 });
 </script>
@@ -240,7 +307,10 @@ addEventListener('DOMContentLoaded', () => {
 <script>
 // In-place markdown editor for the note's owner. Preview and save share one owner-scoped
 // endpoint, so the preview is rendered by the same CommonMark converter that publishes the
-// note (and inherits its html_input=escape, which is what makes innerHTML safe here).
+// note. That converter escapes all raw HTML except an attribute-free allowlist (<details>,
+// <summary> and inline formatting — see AllowlistedRawHtmlRenderer in src/markdown.php), and
+// json_response() encodes the result, so it only ever lands in body context. That is what
+// makes innerHTML safe here; widening the allowlist would undo it.
 (() => {
     const EDIT_URL = <?= json_encode('/n/' . $note['slug'] . '/edit') ?>;
     const CSRF = <?= json_encode(csrf_token()) ?>;
