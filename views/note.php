@@ -157,7 +157,7 @@ addEventListener('DOMContentLoaded', () => {
         <!-- Title lives inside the card (not no-print) so it survives the print/PDF path too. -->
         <div class="px-5 pt-6 pb-4 sm:px-12 sm:pt-8 border-b border-slate-200 dark:border-slate-800">
             <h1 id="noteTitle" class="text-xl sm:text-2xl font-bold tracking-tight"><?= e($note['title']) ?></h1>
-            <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">Updated <time id="noteUpdated" datetime="<?= e(gmdate('c', strtotime($note['updated_at'] . ' UTC'))) ?>" data-ago title="<?= e(fmt_dt($note['updated_at'])) ?>"><?= e(fmt_dt($note['updated_at'])) ?></time><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
+            <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">Updated <time id="noteUpdated" datetime="<?= e(gmdate('c', strtotime($note['updated_at'] . ' UTC'))) ?>" data-ago title="<?= e(fmt_dt($note['updated_at'])) ?>"><?= e(fmt_dt($note['updated_at'])) ?></time><?php if ($can_edit): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
         </div>
         <div id="noteProse" class="prose prose-slate dark:prose-invert max-w-none prose-pre:bg-slate-900 prose-pre:text-slate-100 dark:prose-pre:bg-[#161b22] prose-h1:text-2xl px-5 py-8 sm:px-12 sm:py-10">
 <?= $html ?>
