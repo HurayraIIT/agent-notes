@@ -285,8 +285,10 @@ if ($path === '/verify' && $method === 'POST') {
 
 // ---- Login (password OR email OTP) ----
 if ($path === '/login') {
+    // ?next= (from a note page's Sign in link) rides through both sign-in methods as a hidden field.
+    $next = local_path($_POST['next'] ?? $_GET['next'] ?? null, '/dashboard');
     if (current_user()) {
-        redirect('/dashboard');
+        redirect($next);
     }
     if ($method === 'POST') {
         if (($_POST['mode'] ?? '') === 'password') {
@@ -295,31 +297,33 @@ if ($path === '/login') {
                 render('verify', ['title' => 'Verify your email', 'email' => strtolower(trim($_POST['identifier'] ?? '')), 'error' => null, 'notice' => 'Your email is not verified yet — we just sent you a new code.']);
             }
             if (is_string($result)) {
-                render('login', ['title' => 'Sign in', 'tab' => 'password', 'step' => 'start', 'email' => '', 'identifier' => $_POST['identifier'] ?? '', 'error' => $result]);
+                render('login', ['title' => 'Sign in', 'tab' => 'password', 'step' => 'start', 'email' => '', 'identifier' => $_POST['identifier'] ?? '', 'error' => $result, 'next' => $next]);
             }
-            redirect('/dashboard');
+            redirect($next);
         }
         // OTP mode: send a code
         $email = strtolower(trim($_POST['email'] ?? ''));
         $error = send_otp($email, 'login');
-        render('login', ['title' => 'Sign in', 'tab' => 'otp', 'step' => $error ? 'start' : 'code', 'email' => $email, 'identifier' => '', 'error' => $error]);
+        render('login', ['title' => 'Sign in', 'tab' => 'otp', 'step' => $error ? 'start' : 'code', 'email' => $email, 'identifier' => '', 'error' => $error, 'next' => $next]);
     }
-    render('login', ['title' => 'Sign in', 'tab' => 'password', 'step' => 'start', 'email' => '', 'identifier' => '', 'error' => null]);
+    render('login', ['title' => 'Sign in', 'tab' => 'password', 'step' => 'start', 'email' => '', 'identifier' => '', 'error' => null, 'next' => $next]);
 }
 
 if ($path === '/login/verify' && $method === 'POST') {
     $email = strtolower(trim($_POST['email'] ?? ''));
+    $next = local_path($_POST['next'] ?? null, '/dashboard');
     $result = otp_verify($email, $_POST['code'] ?? '');
     if (is_string($result)) {
-        render('login', ['title' => 'Sign in', 'tab' => 'otp', 'step' => 'code', 'email' => $email, 'identifier' => '', 'error' => $result]);
+        render('login', ['title' => 'Sign in', 'tab' => 'otp', 'step' => 'code', 'email' => $email, 'identifier' => '', 'error' => $result, 'next' => $next]);
     }
     $stmt = db()->prepare('SELECT COUNT(*) FROM api_tokens WHERE user_id = ?');
     $stmt->execute([$result['id']]);
     if ((int) $stmt->fetchColumn() === 0) {
         $token = create_api_token((int) $result['id'], 'default');
+        // The token is shown only here, once — that outranks returning to $next.
         render('token_created', ['title' => 'Your API token', 'token' => $token, 'first' => true]);
     }
-    redirect('/dashboard');
+    redirect($next);
 }
 
 if ($path === '/logout' && $method === 'POST') {
@@ -485,8 +489,7 @@ if ($path === '/admin/note/delete' && $method === 'POST') {
     require_admin();
     csrf_check();
     db()->prepare('DELETE FROM notes WHERE slug = ?')->execute([$_POST['slug'] ?? '']);
-    $back = $_POST['back'] ?? '/admin';
-    redirect(str_starts_with($back, '/') && !str_starts_with($back, '//') ? $back : '/admin');
+    redirect(local_path($_POST['back'] ?? null, '/admin'));
 }
 
 if ($path === '/admin/export' && $method === 'POST') {

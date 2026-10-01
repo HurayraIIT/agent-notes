@@ -127,6 +127,13 @@ addEventListener('DOMContentLoaded', () => {
 <header class="no-print bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800">
     <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
         <a href="/" class="font-bold text-lg tracking-tight shrink-0"><?= brand_icon() ?> <span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent"><?= e(env('APP_NAME', 'Agent Notes')) ?></span></a>
+        <!-- Site nav, a plain link (not a button) so it doesn't read as an action on this note. A sibling of the
+             brand, not part of the action group: when the header wraps on mobile, ml-auto keeps it on the brand
+             row, so the Owner's actions still fit on one row; the divider only shows once everything is one row. -->
+        <div class="ml-auto flex items-center gap-2 text-sm">
+            <?= $viewer ? nav_link('/dashboard', 'Dashboard', 'px-1') : nav_link('/login?next=/n/' . $note['slug'], 'Sign in', 'px-1') ?>
+            <span class="hidden md:block h-5 w-px bg-slate-300 dark:bg-slate-700" aria-hidden="true"></span>
+        </div>
         <div class="flex flex-wrap items-center gap-2 text-sm">
             <?php if ($can_edit): ?>
             <button type="button" id="editBtn" onclick="openEditor()" class="h-9 inline-flex items-center gap-1.5 rounded-md border border-slate-300 dark:border-slate-600 px-3 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900">
@@ -157,7 +164,7 @@ addEventListener('DOMContentLoaded', () => {
         <!-- Title lives inside the card (not no-print) so it survives the print/PDF path too. -->
         <div class="px-5 pt-6 pb-4 sm:px-12 sm:pt-8 border-b border-slate-200 dark:border-slate-800">
             <h1 id="noteTitle" class="text-xl sm:text-2xl font-bold tracking-tight"><?= e($note['title']) ?></h1>
-            <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">Updated <time id="noteUpdated" datetime="<?= e(gmdate('c', strtotime($note['updated_at'] . ' UTC'))) ?>" data-ago title="<?= e(fmt_dt($note['updated_at'])) ?>"><?= e(fmt_dt($note['updated_at'])) ?></time><?php if (current_user()): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
+            <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">Updated <time id="noteUpdated" datetime="<?= e(gmdate('c', strtotime($note['updated_at'] . ' UTC'))) ?>" data-ago title="<?= e(fmt_dt($note['updated_at'])) ?>"><?= e(fmt_dt($note['updated_at'])) ?></time><?php if ($can_edit): ?> · <?= number_format((int) $note['views']) ?> views<?php endif; ?></p>
         </div>
         <div id="noteProse" class="prose prose-slate dark:prose-invert max-w-none prose-pre:bg-slate-900 prose-pre:text-slate-100 dark:prose-pre:bg-[#161b22] prose-h1:text-2xl px-5 py-8 sm:px-12 sm:py-10">
 <?= $html ?>

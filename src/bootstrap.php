@@ -207,6 +207,14 @@ function redirect(string $path): never
     exit;
 }
 
+/** $path if it is a same-origin path, else $fallback — for redirect targets that arrive in a request. */
+function local_path(?string $path, string $fallback): string
+{
+    // Exactly one leading slash: browsers read '//host' and '/\host' as another origin, and their URL
+    // parser drops tabs/newlines, so any control char could smuggle that second slash in.
+    return $path !== null && preg_match('#^/(?![/\\\\])[^\x00-\x20\x7f]*$#D', $path) ? $path : $fallback;
+}
+
 /** A command block that fully wraps (no horizontal scrolling) with a working copy button. */
 function cmd_block(string $command, string $label = ''): string
 {
