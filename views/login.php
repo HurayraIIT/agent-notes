@@ -13,6 +13,7 @@
 
     <div id="pane-password">
         <form method="post" action="/login" class="space-y-4">
+            <input type="hidden" name="next" value="<?= e($next) ?>">
             <input type="hidden" name="mode" value="password">
             <div>
                 <label class="block text-sm font-medium mb-1" for="identifier">Username or email</label>
@@ -33,18 +34,21 @@
         <?php if ($step === 'code'): ?>
         <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">We sent a code to <strong class="text-slate-900 dark:text-white"><?= e($email) ?></strong>. It expires in 10 minutes.</p>
         <form method="post" action="/login/verify" class="space-y-4">
+            <input type="hidden" name="next" value="<?= e($next) ?>">
             <input type="hidden" name="email" value="<?= e($email) ?>">
             <input type="text" name="code" required autofocus placeholder="123456" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code"
                    class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-center text-2xl tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <button class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 font-medium">Verify & sign in</button>
         </form>
         <form method="post" action="/login" class="mt-3 text-center">
+            <input type="hidden" name="next" value="<?= e($next) ?>">
             <input type="hidden" name="mode" value="otp">
             <input type="hidden" name="email" value="<?= e($email) ?>">
             <button class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white underline">Resend code</button>
         </form>
         <?php else: ?>
         <form method="post" action="/login" class="space-y-4">
+            <input type="hidden" name="next" value="<?= e($next) ?>">
             <input type="hidden" name="mode" value="otp">
             <div>
                 <label class="block text-sm font-medium mb-1" for="otp-email">Email</label>
