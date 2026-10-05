@@ -15,7 +15,7 @@ function mcp_tools(): array
                 'properties' => [
                     'title' => ['type' => 'string', 'description' => 'Note title, shown as the page heading'],
                     'content' => ['type' => 'string', 'description' => 'Note body as GitHub-flavored markdown (max 1 MB)'],
-                    'filename' => ['type' => 'string', 'description' => 'Optional download filename, e.g. "betterdocs-ai-fatal" downloads as betterdocs-ai-fatal.md. Slugified; defaults to the title. Does NOT affect the URL.'],
+                    'filename' => ['type' => 'string', 'description' => 'Optional download filename, e.g. "incident-report" downloads as incident-report.md. Slugified; defaults to the title. Does NOT affect the URL.'],
                 ],
                 'required' => ['title', 'content'],
             ],

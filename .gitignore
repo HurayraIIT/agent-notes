@@ -1,34 +1,53 @@
+# Dependencies
 /vendor/
 node_modules/
-npm-debug.log
-yarn-error.log
 
-# Laravel 4 specific
-bootstrap/compiled.php
-app/storage/
-
-# Laravel 5 & Lumen specific
-public/storage
-public/hot
-
-# Laravel 5 & Lumen specific with changed public path
-public_html/storage
-public_html/hot
-
-storage/*.key
+# Environment files
 .env
-Homestead.yaml
-Homestead.json
-/.vagrant
-.phpunit.result.cache
+.env.*
+!.env.example
 
-/public/build
-/storage/pail
-.env.backup
-.env.production
-.phpactor.json
-auth.json
-
+# AI tooling & local agents
+.claude/
 .playwright-cli/
 .playwright-mcp/
 .playwright/
+
+# Composer & PHP
+auth.json
+.phpunit.result.cache
+.phpactor.json
+
+# Logs & temp files
+*.log
+npm-debug.log*
+yarn-error.log*
+/storage/logs/
+/storage/pail/
+/public/build/
+tmp/
+*.tmp
+
+# Databases & local dumps
+*.sqlite
+*.sqlite3
+*.db
+dump.sql
+*.sql.gz
+
+# macOS & OS artifacts
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~

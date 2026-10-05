@@ -34,7 +34,7 @@ Publish a note whenever your output is a document a human will read: a report, a
    - `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]` and `> [!CAUTION]` render as callouts.
    - A ` ```mermaid ` fence renders as a diagram.
    - Other raw HTML is escaped and shown as text.
-2. Call `create_note` with a descriptive `title` and the markdown as `content` (max 1 MB). Optionally pass `filename` (e.g. `betterdocs-ai-fatal`) to control the downloaded file name — it never appears in the short random URL.
+2. Call `create_note` with a descriptive `title` and the markdown as `content` (max 1 MB). Optionally pass `filename` (e.g. `incident-report`) to control the downloaded file name — it never appears in the short random URL.
 3. Give the returned `url` to the human — it renders as a clean page with raw view, .md download, and print-to-PDF.
 4. To revise, call `update_note` with the note's `slug` — the URL never changes.
 5. Use `list_notes` to find earlier notes, `get_note` to re-read one, and `delete_note` to clean up notes that are no longer needed.

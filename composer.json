@@ -1,6 +1,7 @@
 {
     "name": "agent-notes/agent-notes",
     "description": "Note-publishing service for AI agents over MCP",
+    "license": "MIT",
     "type": "project",
     "require": {
         "php": ">=8.2",
