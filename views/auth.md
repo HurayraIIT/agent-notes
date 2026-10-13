@@ -39,7 +39,6 @@ cmd mcp add --transport http --scope user agent-notes {{URL}}/mcp --header "Auth
 
 ## Machine-readable metadata
 
-- OAuth Protected Resource Metadata (RFC 9728): {{URL}}/.well-known/oauth-protected-resource
 - MCP Server Card: {{URL}}/.well-known/mcp/server-card.json
 - API catalog (RFC 9727): {{URL}}/.well-known/api-catalog
 - Full docs: {{URL}}/docs · LLM guide: {{URL}}/llms.txt

@@ -111,7 +111,6 @@ if ($path === '/.well-known/api-catalog') {
             'service-meta' => [
                 ['href' => app_url('/llms.txt'), 'type' => 'text/plain', 'title' => 'LLM usage guide'],
                 ['href' => app_url('/auth.md'), 'type' => 'text/markdown', 'title' => 'Agent authentication guide'],
-                ['href' => app_url('/.well-known/oauth-protected-resource'), 'type' => 'application/json', 'title' => 'OAuth Protected Resource Metadata (RFC 9728)'],
                 ['href' => app_url('/.well-known/agent-skills/index.json'), 'type' => 'application/json', 'title' => 'Agent Skills discovery index'],
                 ['href' => app_url('/sitemap.xml'), 'type' => 'application/xml', 'title' => 'Sitemap'],
             ],
@@ -120,55 +119,12 @@ if ($path === '/.well-known/api-catalog') {
     ]);
 }
 
-if ($path === '/.well-known/openid-configuration') {
-    json_response([
-        'issuer' => app_url(),
-        'authorization_endpoint' => app_url('/login'),
-        'token_endpoint' => app_url('/tokens/create'),
-        'registration_endpoint' => app_url('/register'),
-        'jwks_uri' => app_url('/.well-known/jwks.json'),
-        'response_types_supported' => ['token'],
-        'grant_types_supported' => ['implicit'],
-        'subject_types_supported' => ['public'],
-        'id_token_signing_alg_values_supported' => ['none'],
-        'token_endpoint_auth_methods_supported' => ['client_secret_post'],
-        'scopes_supported' => ['openid', 'notes:read', 'notes:write'],
-        'service_documentation' => app_url('/docs'),
-        'x_bearer_token_info' => [
-            'description' => 'This service uses manually-provisioned Bearer API tokens. Register at ' . app_url('/register') . ', then create tokens on your dashboard.',
-            'token_prefix' => 'an_',
-            'header' => 'Authorization: Bearer <token>',
-        ],
-    ]);
-}
-
-if ($path === '/.well-known/oauth-authorization-server') {
-    json_response([
-        'issuer' => app_url(),
-        'authorization_endpoint' => app_url('/login'),
-        'token_endpoint' => app_url('/tokens/create'),
-        'registration_endpoint' => app_url('/register'),
-        'jwks_uri' => app_url('/.well-known/jwks.json'),
-        'response_types_supported' => ['token'],
-        'grant_types_supported' => ['implicit'],
-        'token_endpoint_auth_methods_supported' => ['client_secret_post'],
-        'scopes_supported' => ['notes:read', 'notes:write'],
-        'service_documentation' => app_url('/docs'),
-        'agent_auth' => [ // auth.md (workos.com/auth-md) agent registration block
-            'skill' => app_url('/auth.md'),
-            'register_uri' => app_url('/register'),
-            'instructions_uri' => app_url('/auth.md'),
-            'methods_supported' => ['manual_provisioning'], // human registers, mints bearer token, hands it to the agent
-            'identity_types_supported' => ['email'],
-            'credential_types_supported' => ['bearer_token'],
-            'revocation_uri' => app_url('/dashboard'),
-        ],
-    ]);
-}
-
-if ($path === '/.well-known/jwks.json') {
-    json_response(['keys' => []]);
-}
+// No OAuth metadata is served on purpose: auth is an out-of-band bearer token, and there is no
+// authorization server to point a client at. /.well-known/{oauth-authorization-server,
+// oauth-protected-resource, openid-configuration, jwks.json} must stay 404 — when they existed,
+// clients that probe discovery (e.g. Command Code) started a browser OAuth flow against /login
+// and /register, which are plain HTML pages, and ignored the bearer header they were given.
+// The server card's `authentication` block is the one authoritative auth signal.
 
 if ($path === '/.well-known/agent-skills' || $path === '/.well-known/agent-skills/index.json') {
     // digest is computed over the exact bytes the SKILL.md route serves (post-{{URL}} substitution)
@@ -187,15 +143,6 @@ if ($path === '/.well-known/agent-skills' || $path === '/.well-known/agent-skill
 
 if ($path === '/.well-known/agent-skills/publish-notes/SKILL.md') {
     text_response(strtr(file_get_contents(__DIR__ . '/../skills/publish-notes/SKILL.md'), ['{{URL}}' => app_url()]), 'text/markdown; charset=utf-8');
-}
-
-if ($path === '/.well-known/oauth-protected-resource') {
-    json_response([
-        'resource' => app_url('/'),
-        'authorization_servers' => [app_url()], // must byte-match the issuer in oauth-authorization-server
-        'scopes_supported' => ['notes:read', 'notes:write'],
-        'bearer_methods_supported' => ['header'],
-    ]);
 }
 
 if ($path === '/llms.txt') {
