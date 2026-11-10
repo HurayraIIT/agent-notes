@@ -30,10 +30,12 @@ for ($i = 0; $i < 2000; $i++) {
 }
 count($seen) === 2000 || $fail('2000 slugs were not all distinct');
 
-// The slug never comes from the title: create_note() only ever calls generate_slug().
+// The slug never comes from the title: inside create_note(), every assignment to $slug is
+// generate_slug(). (slugify() builds the download filename from the title; that is not the URL.)
 $src = file_get_contents(__DIR__ . '/../src/notes.php');
-preg_match('/\$slug\s*=\s*generate_slug\(\);/', $src) || $fail('create_note no longer takes its slug from generate_slug()');
-preg_match('/\$slug\s*=\s*[^;]*\$title/', $src) && $fail('a slug is built from the title');
+preg_match('/function create_note\(.*?\n}\n/s', $src, $body) || $fail('create_note() not found');
+preg_match_all('/\$slug\s*=\s*([^;]*);/', $body[0] ?? '', $assigns);
+$assigns[1] === ['generate_slug()'] || $fail('create_note assigns $slug from ' . json_encode($assigns[1]) . ', not only generate_slug()');
 str_contains(file_get_contents(__DIR__ . '/../schema.sql'), 'slug VARCHAR(43)') || $fail('schema.sql notes.slug is not VARCHAR(43)');
 
 if ($failed) {
