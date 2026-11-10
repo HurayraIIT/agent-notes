@@ -17,7 +17,7 @@ This means the network decides who gets the full app:
 
 - **Never publish port 8081 on a public address.** `compose.yml` binds it to `AGENT_NOTES_TAILNET_BIND` (default `127.0.0.1`). Put a reverse proxy that only listens on the private network (a tailnet IP, a VPN, an internal load balancer) in front of it.
 - The public reverse proxy forwards only to port 8080.
-- Both proxies must **overwrite** `X-Forwarded-For` with the address they saw (`proxy_set_header X-Forwarded-For $remote_addr;`), not append to it. The container trusts that header from private ranges for per-IP rate limits.
+- Both proxies must **overwrite** `X-Forwarded-For` with the address they saw (`proxy_set_header X-Forwarded-For $remote_addr;`), not append to it. The container trusts that header from any private source address (`set_real_ip_from` in `docker/nginx.conf`), because the Docker bridge gateway it arrives from isn't known in advance. So anything that can reach ports 8080/8081 directly can choose its own rate-limit identity. That is one more reason to keep both ports reachable only by the two proxies; narrow the ranges to your bridge subnet if you know it.
 - Proxies should pass `X-Forwarded-Proto https`.
 
 Without Docker, use two nginx `server` blocks on different listen addresses, each with `fastcgi_param AGENT_NOTES_SCOPE public;` or `tailnet;` next to the usual `fastcgi_pass`.
