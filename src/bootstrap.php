@@ -26,10 +26,30 @@ function load_env(string $path): void
 
 load_env(__DIR__ . '/../.env');
 
+/**
+ * ROBOTS_NOINDEX=true keeps the whole install out of search engines: every PHP response carries
+ * X-Robots-Tag (set here, before any routing, so errors get it too), every layout page a robots meta
+ * tag, robots.txt disallows everything, and the bundled nginx tags its own errors. Notes, their
+ * assets and PDFs are noindex either way.
+ */
+function robots_noindex(): bool
+{
+    return strtolower((string) env('ROBOTS_NOINDEX', 'false')) === 'true';
+}
+
+/** The one X-Robots-Tag value every response uses (tests/robots_noindex.php holds that). */
+function robots_tag(): string
+{
+    return robots_noindex() ? 'noindex, nofollow, noarchive' : 'noindex, nofollow';
+}
+
 if (PHP_SAPI !== 'cli') {
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: SAMEORIGIN');
     header('Referrer-Policy: strict-origin-when-cross-origin');
+    if (robots_noindex()) {
+        header('X-Robots-Tag: ' . robots_tag());
+    }
 }
 
 function env(string $key, ?string $default = null): ?string
@@ -229,6 +249,7 @@ function cmd_block(string $command, string $label = ''): string
     return $html;
 }
 
+require __DIR__ . '/features.php';
 require __DIR__ . '/http.php';
 require __DIR__ . '/auth.php';
 require __DIR__ . '/mail.php';
@@ -238,3 +259,6 @@ require __DIR__ . '/ratelimit.php';
 require __DIR__ . '/mcp.php';
 require __DIR__ . '/pdf.php';
 require __DIR__ . '/export.php';
+require __DIR__ . '/assets.php';
+require __DIR__ . '/share.php';
+require __DIR__ . '/serve.php';

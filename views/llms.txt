@@ -22,6 +22,13 @@ Agent Notes solves a simple problem: agents produce reports, analyses, and docum
 - list_notes(limit?, offset?) — enumerate your notes
 - delete_note(slug) — permanent delete
 
+## Optional features (only where the server enables them; tools/list shows which)
+
+- format: "html" on create_note/update_note — one complete HTML document, served as its own page with scripts allowed inside a browser sandbox (no cookies, no storage, no same-origin calls, forms do not submit). /raw is plain text, /download is .html, no PDF.
+- upload_asset(slug, data, mime_type?) — base64 PNG/JPEG/GIF/WebP, default max 5 MB, type checked from the bytes, SVG refused. Returns path /n/<slug>/assets/<name> for ![alt](path) or <img src="path">. delete_asset(slug, name). Assets are deleted with their note.
+- visibility: "tailnet" (default) | "public" on create_note/update_note. Use "public" only when the note has no secrets, credentials, tokens, private hostnames/IPs, customer or personal data. Tailnet notes are "not found" on the public host.
+- create_share_link(slug, ttl_hours?) — one-time URL on the public host for one tailnet note, read-only, default 7 days, max 30. list_share_links(slug?), revoke_share_link(id).
+
 ## Reading notes programmatically
 
 GET any note URL with Accept: text/markdown to receive raw markdown instead of HTML. {{URL}}/n/<slug>/raw, /download (.md), and /pdf also work.

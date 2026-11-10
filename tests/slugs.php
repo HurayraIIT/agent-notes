@@ -1,0 +1,47 @@
+<?php
+
+// Note slugs: random base62 from the CSPRNG, length set by SLUG_BYTES, never derived from the title.
+// Run: php tests/slugs.php
+
+declare(strict_types=1);
+
+require __DIR__ . '/../src/bootstrap.php';
+
+$failed = 0;
+$fail = function (string $why) use (&$failed): void {
+    $failed++;
+    echo "FAIL: $why\n";
+};
+
+unset($_ENV['SLUG_BYTES']);
+slug_length() === 8 || $fail('unset SLUG_BYTES no longer gives the original 8 characters');
+$cases = ['' => 8, '16' => 22, '20' => 27, '32' => 43, '64' => 43, '1' => 22, '6' => 22, '15' => 22, 'abc' => 8];
+foreach ($cases as $bytes => $chars) {
+    $_ENV['SLUG_BYTES'] = (string) $bytes;
+    slug_length() === $chars || $fail("SLUG_BYTES=" . var_export($bytes, true) . " gives " . slug_length() . " characters, want {$chars}");
+}
+
+$_ENV['SLUG_BYTES'] = '16';
+$seen = [];
+for ($i = 0; $i < 2000; $i++) {
+    $s = generate_slug();
+    preg_match('/^[A-Za-z0-9]{22}$/D', $s) || $fail("slug '{$s}' is not 22 base62 characters");
+    $seen[$s] = true;
+}
+count($seen) === 2000 || $fail('2000 slugs were not all distinct');
+
+// The slug never comes from the title: inside create_note(), every assignment to $slug is
+// generate_slug(). (slugify() builds the download filename from the title; that is not the URL.)
+$src = file_get_contents(__DIR__ . '/../src/notes.php');
+preg_match('/function create_note\(.*?\n}\n/s', $src, $body) || $fail('create_note() not found');
+preg_match_all('/\$slug\s*=\s*([^;]*);/', $body[0] ?? '', $assigns);
+$assigns[1] === ['generate_slug()'] || $fail('create_note assigns $slug from ' . json_encode($assigns[1]) . ', not only generate_slug()');
+str_contains(file_get_contents(__DIR__ . '/../schema.sql'), 'slug VARCHAR(43) CHARACTER SET ascii COLLATE ascii_bin')
+    || $fail('schema.sql notes.slug is not a case-sensitive VARCHAR(43): a case-insensitive lookup cuts the entropy');
+str_contains(file_get_contents(__DIR__ . '/../migrations/002_slug_length_pdf_cache.sql'), 'COLLATE ascii_bin')
+    || $fail('migration 002 no longer makes notes.slug case-sensitive');
+
+if ($failed) {
+    exit(1);
+}
+echo "ok: slugs\n";

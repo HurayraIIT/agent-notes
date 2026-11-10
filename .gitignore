@@ -51,3 +51,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Note assets (FEATURE_ASSETS) default location
+/storage/

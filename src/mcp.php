@@ -6,7 +6,7 @@ const MCP_PROTOCOL_VERSION = '2025-06-18';
 
 function mcp_tools(): array
 {
-    return [
+    $tools = [
         [
             'name' => 'create_note',
             'description' => 'Publish a markdown note and get back a shareable URL. Notes render as GitHub-flavored markdown for humans, with raw view, .md download, and print-to-PDF. URLs are unlisted (cryptographically random), so sharing stays deliberate.',
@@ -68,6 +68,77 @@ function mcp_tools(): array
             ],
         ],
     ];
+    return mcp_feature_tools($tools);
+}
+
+/** What each optional feature adds to the MCP surface. With every flag off this returns $tools unchanged. */
+function mcp_feature_tools(array $tools): array
+{
+    $byName = array_column($tools, null, 'name');
+    $slug = ['type' => 'string', 'description' => 'The note slug'];
+    if (feature(Feature::HtmlNotes)) {
+        $format = ['type' => 'string', 'enum' => ['markdown', 'html'], 'description' => '"markdown" (default) or "html". An html note is one complete HTML document served as its own page, scripts allowed, inside a browser sandbox (no cookies or storage; forms do not submit). Put images inline as data: URIs or upload them with upload_asset.'];
+        $byName['create_note']['inputSchema']['properties']['format'] = $format;
+        $byName['update_note']['inputSchema']['properties']['format'] = ['description' => 'Change the format (optional). ' . $format['description']] + $format;
+    }
+    if (feature(Feature::Visibility)) {
+        $vis = ['type' => 'string', 'enum' => ['tailnet', 'public'],
+            'description' => 'Who can open the URL. "tailnet" (default): only people on the private network. "public": anyone on the internet, at the public host. Choose "public" only when the note contains no secrets, credentials, tokens, private or internal hostnames and IPs, customer data or other personal data. When unsure, keep "tailnet" and use a share link instead.'];
+        $byName['create_note']['inputSchema']['properties']['visibility'] = $vis;
+        $byName['update_note']['inputSchema']['properties']['visibility'] = ['description' => 'Change who can open the note (optional; omitted leaves it as it is). ' . $vis['description']] + $vis;
+    }
+    if (feature(Feature::Assets)) {
+        $max = asset_max_bytes();
+        $byName['upload_asset'] = [
+            'name' => 'upload_asset',
+            'description' => "Attach an image to one of your notes and get back a path to embed: ![alt](path) in markdown, <img src=\"path\"> in an html note. PNG, JPEG, GIF or WebP up to {$max} bytes; the type is read from the bytes. SVG is refused (inline <svg> in an html note instead). The same image uploaded twice returns the same path. Assets are deleted with their note.",
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'slug' => $slug,
+                    'data' => ['type' => 'string', 'description' => 'The image as base64, or as a data:image/...;base64, URI'],
+                    'mime_type' => ['type' => 'string', 'description' => 'Optional: image/png, image/jpeg, image/gif or image/webp. Must match the bytes.'],
+                ],
+                'required' => ['slug', 'data'],
+            ],
+        ];
+        $byName['delete_asset'] = [
+            'name' => 'delete_asset',
+            'description' => 'Delete one image from one of your notes. Pages that embed it show a broken image.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => ['slug' => $slug, 'name' => ['type' => 'string', 'description' => 'The asset name from upload_asset or get_note']],
+                'required' => ['slug', 'name'],
+            ],
+        ];
+    }
+    if (feature(Feature::ShareLinks)) {
+        [$default] = share_ttl_hours(null);
+        $maxHours = env_int('SHARE_LINK_TTL_MAX_HOURS', 720);
+        $byName['create_share_link'] = [
+            'name' => 'create_share_link',
+            'description' => "Make an expiring read-only link to one of your tailnet notes, for someone with no network access or account. The link opens that note and its images on the public host and nothing else. The URL is returned only once; treat it like a password. Revoke it with revoke_share_link.",
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'slug' => $slug,
+                    'ttl_hours' => ['type' => 'integer', 'description' => "Hours until the link expires (default {$default}, max {$maxHours})"],
+                ],
+                'required' => ['slug'],
+            ],
+        ];
+        $byName['list_share_links'] = [
+            'name' => 'list_share_links',
+            'description' => 'List share links on your notes (newest first) with status, expiry and use count. Link URLs are not shown again.',
+            'inputSchema' => ['type' => 'object', 'properties' => ['slug' => ['type' => 'string', 'description' => 'Only this note (optional)']]],
+        ];
+        $byName['revoke_share_link'] = [
+            'name' => 'revoke_share_link',
+            'description' => 'Revoke a share link at once. Anyone holding it gets "not found" from then on.',
+            'inputSchema' => ['type' => 'object', 'properties' => ['id' => ['type' => 'integer', 'description' => 'The link id from create_share_link or list_share_links']], 'required' => ['id']],
+        ];
+    }
+    return array_values($byName);
 }
 
 function mcp_error(mixed $id, int $code, string $message, int $httpStatus = 200): never
@@ -96,12 +167,18 @@ function note_summary(array $note, bool $withContent = false): array
     $out = [
         'slug' => $note['slug'],
         'title' => $note['title'],
-        'filename' => $note['filename'] . '.md',
-        'url' => note_url($note['slug']),
+        'filename' => $note['filename'] . '.' . note_format($note)->extension(),
+        'url' => note_url($note['slug'], $note['visibility'] ?? null),
         'size_bytes' => (int) $note['size_bytes'],
         'created_at' => $note['created_at'],
         'updated_at' => $note['updated_at'],
     ];
+    if (feature(Feature::HtmlNotes)) {
+        $out['format'] = note_format($note)->value;
+    }
+    if (feature(Feature::Visibility)) {
+        $out['visibility'] = note_visibility($note)->value;
+    }
     if ($withContent) {
         $out['content'] = $note['content'];
     }
@@ -174,7 +251,11 @@ function mcp_tool_call(mixed $id, string $tool, array $args, int $userId): never
             if (!isset($args['title'], $args['content']) || !is_string($args['title']) || !is_string($args['content'])) {
                 mcp_tool_result($id, ['error' => 'title and content are required strings'], true);
             }
-            [$note, $error] = create_note($userId, $args['title'], $args['content'], isset($args['filename']) && is_string($args['filename']) ? $args['filename'] : null);
+            [$format, $visibility, $error] = mcp_note_options($args);
+            if ($error) {
+                mcp_tool_result($id, ['error' => $error], true);
+            }
+            [$note, $error] = create_note($userId, $args['title'], $args['content'], isset($args['filename']) && is_string($args['filename']) ? $args['filename'] : null, $format, $visibility);
             if ($error) {
                 mcp_tool_result($id, ['error' => $error], true);
             }
@@ -187,12 +268,18 @@ function mcp_tool_call(mixed $id, string $tool, array $args, int $userId): never
             if (empty($args['slug']) || !is_string($args['slug'])) {
                 mcp_tool_result($id, ['error' => 'slug is required'], true);
             }
+            [$format, $visibility, $error] = mcp_note_options($args);
+            if ($error) {
+                mcp_tool_result($id, ['error' => $error], true);
+            }
             [$note, $error] = update_note(
                 $userId,
                 $args['slug'],
                 isset($args['title']) && is_string($args['title']) ? $args['title'] : null,
                 isset($args['content']) && is_string($args['content']) ? $args['content'] : null,
-                isset($args['filename']) && is_string($args['filename']) ? $args['filename'] : null
+                isset($args['filename']) && is_string($args['filename']) ? $args['filename'] : null,
+                $format,
+                $visibility
             );
             if ($error) {
                 mcp_tool_result($id, ['error' => $error], true);
@@ -207,21 +294,17 @@ function mcp_tool_call(mixed $id, string $tool, array $args, int $userId): never
             if (!$note) {
                 mcp_tool_result($id, ['error' => "note '{$args['slug']}' not found"], true);
             }
-            mcp_tool_result($id, note_summary($note, withContent: true));
+            $out = note_summary($note, withContent: true);
+            if (feature(Feature::Assets)) {
+                $out['assets'] = array_map(fn($a) => asset_summary($note, $a), list_assets($note));
+            }
+            mcp_tool_result($id, $out);
 
         case 'list_notes':
             $notes = list_notes($userId, (int) ($args['limit'] ?? 50), (int) ($args['offset'] ?? 0));
             mcp_tool_result($id, [
                 'count' => count($notes),
-                'notes' => array_map(fn($n) => [
-                    'slug' => $n['slug'],
-                    'title' => $n['title'],
-                    'filename' => $n['filename'] . '.md',
-                    'url' => note_url($n['slug']),
-                    'size_bytes' => (int) $n['size_bytes'],
-                    'created_at' => $n['created_at'],
-                    'updated_at' => $n['updated_at'],
-                ], $notes),
+                'notes' => array_map(fn($n) => note_summary($n), $notes),
             ]);
 
         case 'delete_note':
@@ -234,6 +317,77 @@ function mcp_tool_call(mixed $id, string $tool, array $args, int $userId): never
             mcp_tool_result($id, ['message' => "Note '{$args['slug']}' deleted. Its URL no longer works."]);
 
         default:
-            mcp_error($id, -32602, "Unknown tool: {$tool}");
+            mcp_feature_tool_call($id, $tool, $args, $userId);
     }
+}
+
+/** @return array{0: ?NoteFormat, 1: ?Visibility, 2: ?string} format and visibility args, when their features are on */
+function mcp_note_options(array $args): array
+{
+    $format = $visibility = null;
+    if (feature(Feature::HtmlNotes) && isset($args['format'])) {
+        $format = is_string($args['format']) ? NoteFormat::tryFrom($args['format']) : null;
+        if (!$format) {
+            return [null, null, 'format must be "markdown" or "html"'];
+        }
+    }
+    if (feature(Feature::Visibility) && isset($args['visibility'])) {
+        $visibility = is_string($args['visibility']) ? Visibility::tryFrom($args['visibility']) : null;
+        if (!$visibility) {
+            return [null, null, 'visibility must be "tailnet" or "public"'];
+        }
+    }
+    return [$format, $visibility, null];
+}
+
+/** Tools that exist only while their feature flag is on; anything else is an unknown tool, as before. */
+function mcp_feature_tool_call(mixed $id, string $tool, array $args, int $userId): never
+{
+    $slug = isset($args['slug']) && is_string($args['slug']) ? $args['slug'] : '';
+    if (feature(Feature::Assets) && ($tool === 'upload_asset' || $tool === 'delete_asset')) {
+        $note = $slug !== '' ? get_note($slug, $userId) : null;
+        if (!$note) {
+            mcp_tool_result($id, ['error' => $slug === '' ? 'slug is required' : "note '{$slug}' not found"], true);
+        }
+        if ($tool === 'delete_asset') {
+            if (!delete_asset($note, is_string($args['name'] ?? null) ? $args['name'] : '')) {
+                mcp_tool_result($id, ['error' => 'no such asset on this note'], true);
+            }
+            mcp_tool_result($id, ['message' => 'Asset deleted.']);
+        }
+        if (!is_string($args['data'] ?? null)) {
+            mcp_tool_result($id, ['error' => 'data is required: the image as base64'], true);
+        }
+        [$asset, $error] = store_asset($note, $args['data'], is_string($args['mime_type'] ?? null) ? $args['mime_type'] : null);
+        if ($error) {
+            mcp_tool_result($id, ['error' => $error], true);
+        }
+        mcp_tool_result($id, ['message' => 'Asset stored. Embed it by its path; it works on every host that serves the note.', 'mime_type' => $asset['mime']] + asset_summary($note, $asset));
+    }
+    if (feature(Feature::ShareLinks)) {
+        switch ($tool) {
+            case 'create_share_link':
+                if ($slug === '') {
+                    mcp_tool_result($id, ['error' => 'slug is required'], true);
+                }
+                $ttl = $args['ttl_hours'] ?? null;
+                if ($ttl !== null && !is_int($ttl)) {
+                    mcp_tool_result($id, ['error' => 'ttl_hours must be an integer'], true);
+                }
+                [$link, $error] = create_share_link($userId, $slug, $ttl, 'mcp');
+                if ($error) {
+                    mcp_tool_result($id, ['error' => $error], true);
+                }
+                mcp_tool_result($id, ['message' => 'Share link created. This is the only time its URL is shown; send it only to the person it is for.'] + $link);
+            case 'list_share_links':
+                $links = share_links_for($userId, $slug !== '' ? $slug : null);
+                mcp_tool_result($id, ['count' => count($links), 'links' => $links]);
+            case 'revoke_share_link':
+                if (!is_int($args['id'] ?? null) || !revoke_share_link($userId, $args['id'])) {
+                    mcp_tool_result($id, ['error' => 'no active share link with that id on your notes'], true);
+                }
+                mcp_tool_result($id, ['message' => 'Share link revoked. It stops working immediately.']);
+        }
+    }
+    mcp_error($id, -32602, "Unknown tool: {$tool}");
 }

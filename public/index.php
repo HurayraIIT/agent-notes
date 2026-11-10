@@ -7,6 +7,11 @@ require __DIR__ . '/../src/bootstrap.php';
 $path = rtrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/', '/') ?: '/';
 $method = $_SERVER['REQUEST_METHOD'];
 
+// ---- Public host (FEATURE_VISIBILITY): its own allowlist router, nothing below is reachable ----
+if (request_scope() === Scope::Public) {
+    public_scope_handle($path, $method);
+}
+
 // ---- MCP (core product) ----
 if ($path === '/mcp') {
     mcp_handle();
@@ -26,8 +31,12 @@ if (preg_match('#^/n/([A-Za-z0-9-]+)/edit$#', $path, $m) && $method === 'POST') 
         json_response(['error' => 'CSRF token mismatch — reload the page.'], 419);
     }
     // Ownership: same scoped lookup update_note() uses, so a stranger's slug is a 404.
-    if (!get_note($m[1], (int) $user['id'])) {
+    $owned = get_note($m[1], (int) $user['id']);
+    if (!$owned) {
         json_response(['error' => 'Note not found.'], 404);
+    }
+    if (note_format($owned) === NoteFormat::Html) {
+        json_response(['error' => 'HTML notes are edited through MCP (update_note), not in the markdown editor.'], 422);
     }
     $content = (string) ($body['content'] ?? '');
     if (($body['preview'] ?? false) === true) {
@@ -52,33 +61,17 @@ if (preg_match('#^/n/([A-Za-z0-9-]+)/edit$#', $path, $m) && $method === 'POST') 
     ]);
 }
 
-if (preg_match('#^/n/([A-Za-z0-9-]+)(/raw|/download|/pdf)?$#', $path, $m)) {
+if (preg_match('#^/n/([A-Za-z0-9-]+)(?:(/raw|/download|/pdf)|/assets/([^/]+))?$#', $path, $m)) {
     $note = get_note($m[1]);
+    if ($note && ($m[3] ?? '') !== '') {
+        serve_asset($note, $m[3], public: note_visibility($note) === Visibility::Public);
+        $note = null; // no such asset: same 404 as no such note
+    }
     if (!$note) {
         http_response_code(404);
         render('error', ['title' => 'Note not found', 'message' => 'This note does not exist or was deleted.']);
     }
-    header('X-Robots-Tag: noindex, nofollow');
-    $mode = $m[2] ?? '';
-    if ($mode === '/raw' || ($mode === '' && wants_markdown())) {
-        text_response($note['content'], 'text/markdown; charset=utf-8');
-    }
-    if ($mode === '/download') {
-        header('Content-Disposition: attachment; filename="' . $note['filename'] . '.md"');
-        text_response($note['content'], 'text/markdown; charset=utf-8');
-    }
-    if ($mode === '/pdf') {
-        note_pdf($note);
-    }
-    // A view is not an edit (updated_at = updated_at); don't count the owner viewing their own note.
-    $viewer = current_user();
-    if (!$viewer || (int) $viewer['id'] !== (int) $note['user_id']) {
-        db()->prepare('UPDATE notes SET views = views + 1, updated_at = updated_at WHERE id = ?')->execute([$note['id']]);
-        $note['views']++;
-    }
-    http_response_code(200);
-    echo view('note', ['note' => $note, 'html' => markdown_to_html($note['content'])]);
-    exit;
+    serve_note($note, $m[2] ?? '');
 }
 
 // ---- Agent discovery ----
@@ -228,6 +221,9 @@ if ($path === '/sitemap.xml') {
 }
 
 if ($path === '/robots.txt') { // PHP-served: the Sitemap line needs the dynamic site URL
+    if (robots_noindex()) {
+        text_response("User-agent: *\nDisallow: /\n");
+    }
     $body = file_get_contents(__DIR__ . '/../views/robots.txt');
     $body .= "\nSitemap: " . app_url('/sitemap.xml') . "\n";
     text_response($body);
@@ -245,8 +241,12 @@ if ($path === '/' || $path === '/docs') {
 
 // ---- Registration ----
 if ($path === '/register') {
-    if (current_user()) {
+    if (current_user() || tailnet_trust_sign_in()) {
         redirect('/dashboard');
+    }
+    if (tailnet_trust_email() !== null) { // trusted but rate-limited: never fall through to the emailed-code forms
+        http_response_code(429);
+        render('error', ['title' => 'Try again in a minute', 'message' => 'Too many automatic sign-ins from this address. Reload in a minute.']);
     }
     if ($method === 'POST') {
         $email = strtolower(trim($_POST['email'] ?? ''));
@@ -287,8 +287,12 @@ if ($path === '/verify' && $method === 'POST') {
 if ($path === '/login') {
     // ?next= (from a note page's Sign in link) rides through both sign-in methods as a hidden field.
     $next = local_path($_POST['next'] ?? $_GET['next'] ?? null, '/dashboard');
-    if (current_user()) {
+    if (current_user() || tailnet_trust_sign_in()) {
         redirect($next);
+    }
+    if (tailnet_trust_email() !== null) { // trusted but rate-limited: never show the emailed-code forms
+        http_response_code(429);
+        render('error', ['title' => 'Try again in a minute', 'message' => 'Too many automatic sign-ins from this address. Reload in a minute.']);
     }
     if ($method === 'POST') {
         if (($_POST['mode'] ?? '') === 'password') {
@@ -343,9 +347,28 @@ if ($path === '/dashboard') {
         'user' => $user,
         'notes' => $notes,
         'tokens' => $stmt->fetchAll(),
+        'share_links' => feature(Feature::ShareLinks) ? share_links_for((int) $user['id']) : [],
         'settings_error' => null,
         'settings_saved' => isset($_GET['saved']),
     ]);
+}
+
+if ($path === '/share/create' && $method === 'POST' && feature(Feature::ShareLinks)) {
+    $user = require_login();
+    csrf_check();
+    $hours = isset($_POST['ttl_hours']) && ctype_digit((string) $_POST['ttl_hours']) ? (int) $_POST['ttl_hours'] : null;
+    [$link, $error] = create_share_link((int) $user['id'], (string) ($_POST['slug'] ?? ''), $hours, 'dashboard');
+    if ($error) {
+        render('error', ['title' => 'Share link not created', 'message' => ucfirst($error) . '.']);
+    }
+    render('share_created', ['title' => 'Share link', 'link' => $link]);
+}
+
+if ($path === '/share/revoke' && $method === 'POST' && feature(Feature::ShareLinks)) {
+    $user = require_login();
+    csrf_check();
+    revoke_share_link((int) $user['id'], (int) ($_POST['id'] ?? 0));
+    redirect('/dashboard#share-links');
 }
 
 if ($path === '/settings' && $method === 'POST') {
@@ -363,6 +386,7 @@ if ($path === '/settings' && $method === 'POST') {
         'user' => $user,
         'notes' => $notes,
         'tokens' => $stmt->fetchAll(),
+        'share_links' => feature(Feature::ShareLinks) ? share_links_for((int) $user['id']) : [],
         'settings_error' => $error,
         'settings_saved' => false,
     ]);
@@ -394,7 +418,7 @@ if ($path === '/account/delete' && $method === 'POST') {
     $user = require_login();
     csrf_check();
     logout();
-    db()->prepare('DELETE FROM users WHERE id = ?')->execute([$user['id']]); // cascades to notes/tokens/sessions
+    delete_user((int) $user['id']); // notes and their assets; tokens/sessions cascade
     redirect('/');
 }
 
@@ -480,7 +504,7 @@ if ($path === '/admin/user/delete' && $method === 'POST') {
     csrf_check();
     $id = (int) ($_POST['id'] ?? 0);
     if ($id !== (int) $admin['id']) { // don't let the admin nuke itself from here
-        db()->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
+        delete_user($id);
     }
     redirect('/admin');
 }
@@ -488,7 +512,7 @@ if ($path === '/admin/user/delete' && $method === 'POST') {
 if ($path === '/admin/note/delete' && $method === 'POST') {
     require_admin();
     csrf_check();
-    db()->prepare('DELETE FROM notes WHERE slug = ?')->execute([$_POST['slug'] ?? '']);
+    delete_notes('slug = ?', [(string) ($_POST['slug'] ?? '')]);
     redirect(local_path($_POST['back'] ?? null, '/admin'));
 }
 

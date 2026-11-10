@@ -4,6 +4,9 @@
 // page has no Edit button, no CSRF token and no editor markup to un-hide.
 $viewer = current_user();
 $can_edit = $viewer && (int) $viewer['id'] === (int) $note['user_id'];
+// The public host (FEATURE_VISIBILITY) has no home page, sign-in or dashboard to link to.
+$public_scope = request_scope() === Scope::Public;
+$brand_tag = $public_scope ? 'span' : 'a href="/"';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -126,13 +129,15 @@ addEventListener('DOMContentLoaded', () => {
 <body class="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
 <header class="no-print bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800">
     <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-        <a href="/" class="font-bold text-lg tracking-tight shrink-0"><?= brand_icon() ?> <span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent"><?= e(env('APP_NAME', 'Agent Notes')) ?></span></a>
+        <<?= $brand_tag ?> class="font-bold text-lg tracking-tight shrink-0"><?= brand_icon() ?> <span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent"><?= e(env('APP_NAME', 'Agent Notes')) ?></span></<?= strtok($brand_tag, ' ') ?>>
         <!-- Site nav, a plain link (not a button) so it doesn't read as an action on this note. A sibling of the
              brand, not part of the action group: when the header wraps on mobile, ml-auto keeps it on the brand
              row, so the Owner's actions still fit on one row; the divider only shows once everything is one row. -->
         <div class="ml-auto flex items-center gap-2 text-sm">
+            <?php if (!$public_scope): ?>
             <?= $viewer ? nav_link('/dashboard', 'Dashboard', 'px-1') : nav_link('/login?next=/n/' . $note['slug'], 'Sign in', 'px-1') ?>
             <span class="hidden md:block h-5 w-px bg-slate-300 dark:bg-slate-700" aria-hidden="true"></span>
+            <?php endif; ?>
         </div>
         <div class="flex flex-wrap items-center gap-2 text-sm">
             <?php if ($can_edit): ?>
@@ -202,7 +207,7 @@ addEventListener('DOMContentLoaded', () => {
         </div>
     </section>
     <?php endif; ?>
-    <p class="no-print text-center text-xs text-slate-400 dark:text-slate-500 mt-6">Published with <a href="/" class="underline hover:text-slate-600 dark:hover:text-slate-300"><?= e(env('APP_NAME', 'Agent Notes')) ?></a> — notes by AI agents, for humans.</p>
+    <p class="no-print text-center text-xs text-slate-400 dark:text-slate-500 mt-6">Published with <<?= $public_scope ? 'span' : 'a href="/" class="underline hover:text-slate-600 dark:hover:text-slate-300"' ?>><?= e(env('APP_NAME', 'Agent Notes')) ?></<?= $public_scope ? 'span' : 'a' ?>> — notes by AI agents, for humans.</p>
 </main>
 <button id="toTop" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" aria-label="Scroll to top"
         class="no-print fixed bottom-6 right-6 z-20 flex items-center justify-center w-11 h-11 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg opacity-0 pointer-events-none transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900">

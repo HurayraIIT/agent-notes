@@ -12,26 +12,40 @@ function note_pdf(array $note): never
         text_response('Too many PDF requests — try again in a minute.', status: 429);
     }
 
-    $stmt = db()->prepare('SELECT pdf_cache FROM notes WHERE id = ?');
-    $stmt->execute([$note['id']]);
-    $pdf = $stmt->fetchColumn();
+    // A tailnet note read on the public host (through a share link) prints no URL: its own URL names the
+    // private app host. That copy is never cached, so the cache only ever holds the note's own URL.
+    $shared = request_scope() === Scope::Public && note_visibility($note) !== Visibility::Public;
+    // The cache is read and written only while the row still has the visibility this request saw, so
+    // a visibility change mid-render can't publish or serve a PDF carrying the other host's URL.
+    $match = feature(Feature::Visibility) ? ' AND visibility = ?' : '';
+    $key = feature(Feature::Visibility) ? [$note['id'], note_visibility($note)->value] : [$note['id']];
+    $pdf = null;
+    if (!$shared) {
+        $stmt = db()->prepare("SELECT pdf_cache FROM notes WHERE id = ?{$match}");
+        $stmt->execute($key);
+        $pdf = $stmt->fetchColumn();
+    }
 
-    if (!$pdf) {
+    if ($shared) {
+        $pdf = generate_pdf($note, with_url: false);
+    } elseif (!$pdf) {
         $pdf = generate_pdf($note);
         // updated_at = updated_at: a cache write is not an edit
-        db()->prepare('UPDATE notes SET pdf_cache = ?, updated_at = updated_at WHERE id = ?')
-            ->execute([$pdf, $note['id']]);
+        db()->prepare("UPDATE notes SET pdf_cache = ?, updated_at = updated_at WHERE id = ?{$match}")
+            ->execute([$pdf, ...$key]);
     }
 
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="' . $note['filename'] . '.pdf"');
-    header('X-Robots-Tag: noindex, nofollow');
+    header('X-Robots-Tag: ' . robots_tag());
     echo $pdf;
     exit;
 }
 
-function generate_pdf(array $note): string
+function generate_pdf(array $note, bool $with_url = true): string
 {
+    // A public note prints its public-host URL; every other note the app URL.
+    $url = $with_url ? ' · ' . e(note_url($note['slug'], note_visibility($note)->value)) : '';
     $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 11pt; color: #1e293b; line-height: 1.55; }
         h1, h2, h3, h4 { color: #0f172a; line-height: 1.25; }
@@ -52,7 +66,7 @@ function generate_pdf(array $note): string
         .md-alert-title { font-weight: bold; }
         </style></head><body>'
         . '<h1 class="doc-title">' . e($note['title']) . '</h1>'
-        . '<p class="doc-meta">Updated ' . e(fmt_dt($note['updated_at'])) . ' · ' . e(note_url($note['slug'])) . '</p>'
+        . '<p class="doc-meta">Updated ' . e(fmt_dt($note['updated_at'])) . $url . '</p>'
         . markdown_to_html($note['content'])
         . '</body></html>';
 
