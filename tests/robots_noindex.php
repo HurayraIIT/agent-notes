@@ -34,14 +34,19 @@ function code_tokens(string $file): array
     return $out;
 }
 
-/** The value of a plain string literal token, or null. */
+/** The value of a plain string literal token, or null. Single quotes escape only \\ and \', as in PHP. */
 function literal(array $t): ?string
 {
-    return $t[0] === T_CONSTANT_ENCAPSED_STRING ? stripcslashes(substr($t[1], 1, -1)) : null;
+    if ($t[0] !== T_CONSTANT_ENCAPSED_STRING) {
+        return null;
+    }
+    $body = substr($t[1], 1, -1);
+    return $t[1][0] === "'" ? strtr($body, ['\\\\' => '\\', "\\'" => "'"]) : stripcslashes($body);
 }
 
 // Structural, on PHP tokens: every string that names X-Robots-Tag is exactly 'X-Robots-Tag: ' followed
-// by `. robots_tag()` and the end of the expression, and nothing calls header_remove().
+// by `. robots_tag()` and the end of the expression, and nothing calls header_remove(). This is bounded
+// syntax coverage: a value built through a variable or constant and changed afterwards isn't followed.
 $code = array_merge(glob("$repo/src/*.php"), glob("$repo/public/*.php"), glob("$repo/views/*.php"), glob("$repo/views/admin/*.php"));
 $writers = 0;
 foreach ($code as $file) {
