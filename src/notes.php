@@ -141,7 +141,8 @@ function update_note(int $userId, string $slug, ?string $title, ?string $content
         db()->prepare('UPDATE notes SET format = ?, pdf_cache = NULL WHERE id = ?')->execute([$format->value, $note['id']]);
     }
     if ($visibility !== null) { // only ever an explicit argument: nothing changes visibility implicitly
-        db()->prepare('UPDATE notes SET visibility = ? WHERE id = ?')->execute([$visibility->value, $note['id']]);
+        // pdf_cache = NULL: the PDF prints the note's URL, which changes host with visibility
+        db()->prepare('UPDATE notes SET visibility = ?, pdf_cache = NULL WHERE id = ?')->execute([$visibility->value, $note['id']]);
     }
     return [get_note($slug, $userId), null];
 }
@@ -169,28 +170,51 @@ function delete_note(int $userId, string $slug): bool
 
 /**
  * Every note deletion goes through here, so a note's asset directory always goes with it. Share links
- * cascade in the database. The row goes first: if removing the files fails, they are unreachable
- * (no note, no route) rather than a note pointing at missing files.
+ * cascade in the database. The rows are locked and deleted in one transaction, the same row lock
+ * store_asset() takes, so no upload can land after the purge. The files go after the commit: if
+ * removing them fails, they are unreachable (no note, no route) rather than a note pointing at
+ * missing files.
  */
 function delete_notes(string $where, array $params): int
 {
-    $stmt = db()->prepare("SELECT id FROM notes WHERE {$where}");
-    $stmt->execute($params);
-    $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
-    if (!$ids) {
-        return 0;
-    }
-    $in = implode(',', array_map('intval', $ids));
-    db()->exec("DELETE FROM notes WHERE id IN ({$in})");
-    foreach ($ids as $id) {
-        purge_note_assets((int) $id);
-    }
-    return count($ids);
+    return count(delete_locked($where, $params));
 }
 
 /** Deletes a user and everything they own (notes and their assets; tokens and sessions cascade). */
 function delete_user(int $userId): void
 {
-    delete_notes('user_id = ?', [$userId]);
-    db()->prepare('DELETE FROM users WHERE id = ?')->execute([$userId]);
+    delete_locked('user_id = ?', [$userId], $userId);
+}
+
+/**
+ * With $userId, the user row is locked first, which blocks new notes for them (the notes foreign-key
+ * check waits on it), and deleted with their notes.
+ * @return list<int> the deleted note ids
+ */
+function delete_locked(string $where, array $params, ?int $userId = null): array
+{
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        if ($userId !== null) {
+            $pdo->prepare('SELECT id FROM users WHERE id = ? FOR UPDATE')->execute([$userId]);
+        }
+        $stmt = $pdo->prepare("SELECT id FROM notes WHERE {$where} FOR UPDATE");
+        $stmt->execute($params);
+        $ids = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+        if ($ids) {
+            $pdo->exec('DELETE FROM notes WHERE id IN (' . implode(',', $ids) . ')');
+        }
+        if ($userId !== null) {
+            $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$userId]);
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+    foreach ($ids as $id) {
+        purge_note_assets($id);
+    }
+    return $ids;
 }

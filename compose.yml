@@ -87,6 +87,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate: # never serve an unmigrated or half-migrated schema
+        condition: service_completed_successfully
     volumes:
       - assets:/app/storage/assets
     healthcheck:

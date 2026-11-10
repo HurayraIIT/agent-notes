@@ -102,6 +102,25 @@ function store_asset(array $note, string $data, ?string $declared): array
     if ($error) {
         return [null, $error];
     }
+    // Hold the note's row lock while writing, the lock delete_notes() takes: an upload either finishes
+    // before the note's files are purged or finds the note gone. It also serialises the per-note cap.
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare('SELECT id FROM notes WHERE id = ? FOR UPDATE');
+        $stmt->execute([(int) $note['id']]);
+        [$asset, $error] = $stmt->fetch() ? write_asset($note, $asset) : [null, 'note not found'];
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+    return [$asset, $error];
+}
+
+/** @return array{0: ?array, 1: ?string} [asset, error]; the caller holds the note's row lock */
+function write_asset(array $note, array $asset): array
+{
     $dir = asset_dir((int) $note['id']);
     if (!is_dir($dir) && !@mkdir($dir, 0750, true) && !is_dir($dir)) {
         error_log('store_asset: cannot create ' . $dir);

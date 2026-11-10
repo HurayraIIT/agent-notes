@@ -98,9 +98,16 @@ function share_links_for(int $userId, ?string $slug = null, ?int $id = null): ar
         $sql .= ' AND l.id = ?';
         $params[] = $id;
     }
-    $stmt = db()->prepare($sql . ' ORDER BY l.id DESC LIMIT 200');
-    $stmt->execute($params);
-    return array_map(fn($r) => ['id' => (int) $r['id'], 'use_count' => (int) $r['use_count']] + $r, $stmt->fetchAll());
+    // Every active link, always: a link that still grants access must stay findable to revoke.
+    // Only the history of revoked and expired ones is capped.
+    $active = 'l.revoked_at IS NULL AND l.expires_at > NOW()';
+    $rows = [];
+    foreach (["AND {$active} ORDER BY l.id DESC", "AND NOT ({$active}) ORDER BY l.id DESC LIMIT 100"] as $tail) {
+        $stmt = db()->prepare("{$sql} {$tail}");
+        $stmt->execute($params);
+        array_push($rows, ...$stmt->fetchAll());
+    }
+    return array_map(fn($r) => ['id' => (int) $r['id'], 'use_count' => (int) $r['use_count']] + $r, $rows);
 }
 
 function revoke_share_link(int $userId, int $id): bool
