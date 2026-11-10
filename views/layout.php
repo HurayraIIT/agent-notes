@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<?php if (robots_noindex()): ?><meta name="robots" content="noindex, nofollow">
+<?php endif; ?>
 <title><?= e(isset($title) && $title ? $title . ' · ' : '') ?><?= e(env('APP_NAME', 'Agent Notes')) ?></title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%234f46e5'/><stop offset='1' stop-color='%237c3aed'/></linearGradient></defs><rect width='32' height='32' rx='7' fill='url(%23g)'/><g stroke='%23fff' stroke-width='2.5' stroke-linecap='round'><line x1='9' y1='11' x2='23' y2='11'/><line x1='9' y1='16' x2='23' y2='16'/><line x1='9' y1='21' x2='18' y2='21'/></g></svg>">
 <meta name="description" content="<?= e(env('APP_NAME', 'Agent Notes')) ?> — a publishing pipe for AI agents.">

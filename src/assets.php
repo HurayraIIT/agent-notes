@@ -202,7 +202,7 @@ function asset_headers(string $mime, bool $public): array
         "Content-Security-Policy: default-src 'none'; sandbox",
         'Content-Disposition: inline',
         'Referrer-Policy: no-referrer',
-        'X-Robots-Tag: noindex, nofollow',
+        'X-Robots-Tag: ' . ROBOTS_TAG,
         // Names are content hashes, so a cached copy is never stale. Non-public notes stay out of shared caches.
         'Cache-Control: ' . ($public ? 'public, max-age=86400' : 'private, max-age=3600'),
     ];

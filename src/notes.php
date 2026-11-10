@@ -44,11 +44,23 @@ function slugify(string $title): string
     return substr($slug, 0, 60) ?: 'note';
 }
 
+/**
+ * Slug length in base62 characters. SLUG_BYTES (6–32) sets the entropy in bytes, rounded up to whole
+ * characters (16 bytes: 22 characters, 131 bits). Unset, the original 8 characters (about 47 bits).
+ * Existing notes keep their slugs. Longer slugs need migration 002 (notes.slug VARCHAR(43)).
+ */
+function slug_length(): int
+{
+    $bytes = env_int('SLUG_BYTES', 0);
+    return $bytes === 0 ? 8 : (int) ceil(min(max($bytes, 6), 32) * 8 / log(62, 2));
+}
+
+/** A random base62 slug from the CSPRNG. It never carries the note's title or any other text. */
 function generate_slug(): string
 {
     $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     $slug = '';
-    for ($i = 0; $i < 8; $i++) {
+    for ($i = 0, $n = slug_length(); $i < $n; $i++) {
         $slug .= $alphabet[random_int(0, 61)];
     }
     return $slug;

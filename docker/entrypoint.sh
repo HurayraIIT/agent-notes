@@ -6,7 +6,7 @@
 set -eu
 umask 027
 php -r '
-$keep = "/^(APP_|DB_|MAIL_|FEATURE_|ASSET_|SHARE_|TAILNET_TRUST_|RATE_LIMIT_|NOTE_MAX_)[A-Z0-9_]*$|^(PUBLIC_URL|MYSQLDUMP_PATH|ADMIN_EMAIL)$/";
+$keep = "/^(APP_|DB_|MAIL_|FEATURE_|ASSET_|SHARE_|TAILNET_TRUST_|RATE_LIMIT_|NOTE_MAX_|SLUG_|ROBOTS_)[A-Z0-9_]*$|^(PUBLIC_URL|MYSQLDUMP_PATH|ADMIN_EMAIL)$/";
 $out = "";
 foreach (getenv() as $k => $v) {
     if (!preg_match($keep, $k)) {

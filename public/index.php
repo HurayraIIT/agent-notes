@@ -221,6 +221,9 @@ if ($path === '/sitemap.xml') {
 }
 
 if ($path === '/robots.txt') { // PHP-served: the Sitemap line needs the dynamic site URL
+    if (robots_noindex()) {
+        text_response("User-agent: *\nDisallow: /\n");
+    }
     $body = file_get_contents(__DIR__ . '/../views/robots.txt');
     $body .= "\nSitemap: " . app_url('/sitemap.xml') . "\n";
     text_response($body);

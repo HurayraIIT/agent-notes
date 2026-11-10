@@ -20,16 +20,31 @@ function load_env(string $path): void
         if (preg_match('/^(["\'])(.*)\1$/', $value, $m)) {
             $value = $m[2];
         }
-        $_ENV[trim($key)] = $value;
+        $_ENV[trim($key)] ??= $value; // a value already in the environment wins, as with phpdotenv
     }
 }
 
 load_env(__DIR__ . '/../.env');
 
+const ROBOTS_TAG = 'noindex, nofollow, noarchive';
+
+/**
+ * ROBOTS_NOINDEX=true keeps the whole install out of search engines: every PHP response carries
+ * X-Robots-Tag (set here, before any routing, so errors get it too), every layout page a robots meta
+ * tag, and robots.txt disallows everything. Notes, their assets and PDFs are noindex either way.
+ */
+function robots_noindex(): bool
+{
+    return strtolower((string) env('ROBOTS_NOINDEX', 'false')) === 'true';
+}
+
 if (PHP_SAPI !== 'cli') {
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: SAMEORIGIN');
     header('Referrer-Policy: strict-origin-when-cross-origin');
+    if (robots_noindex()) {
+        header('X-Robots-Tag: ' . ROBOTS_TAG);
+    }
 }
 
 function env(string $key, ?string $default = null): ?string

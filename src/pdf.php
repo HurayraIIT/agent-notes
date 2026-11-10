@@ -37,7 +37,7 @@ function note_pdf(array $note): never
 
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="' . $note['filename'] . '.pdf"');
-    header('X-Robots-Tag: noindex, nofollow');
+    header('X-Robots-Tag: ' . ROBOTS_TAG);
     echo $pdf;
     exit;
 }

@@ -110,6 +110,8 @@ RFC 8288 `Link` headers on `/` and `/docs` point at all of the above.
 | `FEATURE_TAILNET_TRUST` | false | Sign tailnet-listener visitors in as one user, no email |
 | `TAILNET_TRUST_USER_EMAIL` | — | That user's identifier (never mailed) |
 | `TAILNET_TRUST_RATE_PER_MIN` | 30 | Automatic sign-ins per IP per minute |
+| `SLUG_BYTES` | — (8 characters) | Entropy of new note slugs in bytes, 6–32; 16 gives 22 random base62 characters (131 bits). Run `bin/migrate.php` first; existing slugs keep working |
+| `ROBOTS_NOINDEX` | false | `X-Robots-Tag: noindex, nofollow, noarchive` on every response, a robots meta tag on every page, `robots.txt` `Disallow: /`. Notes are noindex either way |
 | `MAIL_PRIMARY_*` / `MAIL_FAILOVER_*` | — | Two full SMTP blocks: HOST, PORT, USERNAME, PASSWORD, ENCRYPTION, FROM_ADDRESS, FROM_NAME |
 | `MYSQLDUMP_PATH` | auto-detect | Full path to `mysqldump` for the admin DB export |
 

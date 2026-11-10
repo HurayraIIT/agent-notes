@@ -19,7 +19,7 @@ function html_note_headers(): array
         'Content-Security-Policy: sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox allow-downloads',
         'X-Content-Type-Options: nosniff',
         'Referrer-Policy: no-referrer',
-        'X-Robots-Tag: noindex, nofollow',
+        'X-Robots-Tag: ' . ROBOTS_TAG,
         'Cache-Control: private, no-cache',
     ];
 }
@@ -27,7 +27,7 @@ function html_note_headers(): array
 /** Serves /n/<slug> and its /raw, /download and /pdf forms. $share is the share link that granted access, if any. */
 function serve_note(array $note, string $mode, ?array $share = null): never
 {
-    header('X-Robots-Tag: noindex, nofollow');
+    header('X-Robots-Tag: ' . ROBOTS_TAG);
     if ($mode === '' && $share) {
         share_audit((int) $share['id'], (int) $note['id'], 'viewed');
     }
