@@ -45,14 +45,16 @@ function slugify(string $title): string
 }
 
 /**
- * Slug length in base62 characters. SLUG_BYTES (6–32) sets the entropy in bytes, rounded up to whole
- * characters (16 bytes: 22 characters, 131 bits). Unset, the original 8 characters (about 47 bits).
- * Existing notes keep their slugs. Longer slugs need migration 002 (notes.slug VARCHAR(43)).
+ * Slug length in base62 characters. SLUG_BYTES (16–32; any set value is raised to at least 16, i.e.
+ * 128 bits) sets the entropy in bytes, rounded up to whole characters (16 bytes: 22 characters, 131
+ * bits). Unset, the original 8 characters (about 47 bits). Existing notes keep their slugs. Longer
+ * slugs need migration 002, which also makes notes.slug case-sensitive (ascii_bin): under the old
+ * case-insensitive collation a lookup matches any letter case, which would cut the entropy.
  */
 function slug_length(): int
 {
     $bytes = env_int('SLUG_BYTES', 0);
-    return $bytes === 0 ? 8 : (int) ceil(min(max($bytes, 6), 32) * 8 / log(62, 2));
+    return $bytes === 0 ? 8 : (int) ceil(min(max($bytes, 16), 32) * 8 / log(62, 2));
 }
 
 /** A random base62 slug from the CSPRNG. It never carries the note's title or any other text. */

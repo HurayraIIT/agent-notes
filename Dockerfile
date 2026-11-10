@@ -24,3 +24,4 @@ CMD ["php-fpm"]
 FROM nginx:1.27-alpine AS web
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx-app.conf /etc/nginx/agent-notes-app.conf
+COPY --chmod=755 docker/nginx-robots.sh /docker-entrypoint.d/40-agent-notes-robots.sh

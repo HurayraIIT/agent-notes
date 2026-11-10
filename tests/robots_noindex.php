@@ -3,27 +3,57 @@
 // With ROBOTS_NOINDEX=true, every PHP response carries exactly one `X-Robots-Tag: noindex, nofollow,
 // noarchive`, and every page from layout.php a robots meta tag. It runs the app under `php -S` on
 // both scopes and requests every route literal in public/index.php, plus samples of the pattern
-// routes, with GET and POST. The database is pointed at a closed port on purpose: a request that
-// reaches the database fails with a 500, which must still carry the header, since it is set before
-// routing. With the flag off, the home page stays indexable. Run: php tests/robots_noindex.php
+// routes, with GET and POST. The app runs from a temporary copy with no .env, so only this test's
+// settings apply, and its database is a closed port: a request that reaches the database fails with a
+// 500, which must still carry the header, since bootstrap sets it before routing. The handlers that
+// need a real note (note pages, assets, PDFs) are covered structurally instead: every X-Robots-Tag in
+// the code goes through robots_tag(), and nothing removes headers, so a later header() can only set
+// the same value again. With the flag off, the home page stays indexable. The Docker E2E suite checks
+// those handlers live. Run: php tests/robots_noindex.php
 
 declare(strict_types=1);
 
 const WANT = 'noindex, nofollow, noarchive';
-$root = dirname(__DIR__);
+$repo = dirname(__DIR__);
 $failed = 0;
 $fail = function (string $why) use (&$failed): void {
     $failed++;
     echo "FAIL: $why\n";
 };
 
+// Structural: one value, set in one way, never removed.
+foreach (array_merge(glob("$repo/src/*.php"), glob("$repo/public/*.php"), glob("$repo/views/*.php"), glob("$repo/views/admin/*.php")) as $file) {
+    $code = file_get_contents($file);
+    str_contains($code, 'header_remove') && $fail(basename($file) . ' calls header_remove(), which could drop X-Robots-Tag');
+    preg_match_all("/'X-Robots-Tag:([^']*)'(\s*\.\s*robots_tag\(\))?/", $code, $tags, PREG_SET_ORDER);
+    foreach ($tags as $t) {
+        (trim($t[1]) === '' && !empty($t[2])) || $fail(basename($file) . " sets X-Robots-Tag to something other than robots_tag(): {$t[0]}");
+    }
+}
+
+// A temporary copy of the app with no .env: vendor is linked, the rest copied.
+$root = sys_get_temp_dir() . '/an-robots-' . bin2hex(random_bytes(4));
+mkdir($root);
+symlink("$repo/vendor", "$root/vendor");
+foreach (['public', 'src', 'views', 'skills'] as $dir) {
+    exec('cp -R ' . escapeshellarg("$repo/$dir") . ' ' . escapeshellarg("$root/$dir"), $_, $rc);
+    $rc === 0 || $fail("could not copy $dir");
+}
+
 $index = file_get_contents("$root/public/index.php");
+// Every pattern route needs a sample below; a new one fails here until it gets one.
+preg_match_all("/preg_match\('#\^(\/[^#]*)#/", $index . file_get_contents("$root/src/serve.php"), $patterns);
+$known = ['/n/([A-Za-z0-9-]+)/edit$', '/n/([A-Za-z0-9-]+)(?:(/raw|/download|/pdf)|/assets/([^/]+))?$', '/admin/user/(\d+)$', '/s/([^/]+)$'];
+count($patterns[1]) >= 4 || $fail('found only ' . count($patterns[1]) . ' pattern routes');
+foreach (array_unique($patterns[1]) as $pat) {
+    in_array($pat, $known, true) || $fail("pattern route #^{$pat}# has no sample path in this test");
+}
 preg_match_all("/\\\$path === '(\\/[^']*)'/", $index, $m1);
 preg_match_all("/str_starts_with\\(\\\$path, '(\\/[^']*)'\\)/", $index, $m2);
 $slug = 'AbCdEfGh';
 $paths = array_unique(array_merge($m1[1], array_map(fn($p) => $p . 'x', $m2[1]), [
     "/n/$slug", "/n/$slug/raw", "/n/$slug/download", "/n/$slug/pdf", "/n/$slug/edit",
-    "/n/$slug/assets/0123456789abcdef0123.png", '/s/' . str_repeat('A', 43), '/s/short', '/no-such-route',
+    "/n/$slug/assets/0123456789abcdef0123.png", '/s/' . str_repeat('A', 43), '/s/short', '/admin/user/1', '/no-such-route',
 ]));
 count($m1[1]) >= 20 || $fail('found only ' . count($m1[1]) . " route literals in public/index.php; did the routing change shape?");
 
@@ -98,6 +128,7 @@ $robots($headers) === [] || $fail("flag off: GET / ($status) carries X-Robots-Ta
 str_contains(fetch($port, 'GET', '/robots.txt')[2], 'Sitemap:') || $fail('flag off: robots.txt lost its Sitemap line');
 proc_terminate($proc);
 @unlink($router);
+exec('rm -rf ' . escapeshellarg($root));
 
 if ($failed) {
     exit(1);

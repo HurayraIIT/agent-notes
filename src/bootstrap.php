@@ -20,22 +20,27 @@ function load_env(string $path): void
         if (preg_match('/^(["\'])(.*)\1$/', $value, $m)) {
             $value = $m[2];
         }
-        $_ENV[trim($key)] ??= $value; // a value already in the environment wins, as with phpdotenv
+        $_ENV[trim($key)] = $value;
     }
 }
 
 load_env(__DIR__ . '/../.env');
 
-const ROBOTS_TAG = 'noindex, nofollow, noarchive';
-
 /**
  * ROBOTS_NOINDEX=true keeps the whole install out of search engines: every PHP response carries
  * X-Robots-Tag (set here, before any routing, so errors get it too), every layout page a robots meta
- * tag, and robots.txt disallows everything. Notes, their assets and PDFs are noindex either way.
+ * tag, robots.txt disallows everything, and the bundled nginx tags its own errors. Notes, their
+ * assets and PDFs are noindex either way.
  */
 function robots_noindex(): bool
 {
     return strtolower((string) env('ROBOTS_NOINDEX', 'false')) === 'true';
+}
+
+/** The one X-Robots-Tag value every response uses (tests/robots_noindex.php holds that). */
+function robots_tag(): string
+{
+    return robots_noindex() ? 'noindex, nofollow, noarchive' : 'noindex, nofollow';
 }
 
 if (PHP_SAPI !== 'cli') {
@@ -43,7 +48,7 @@ if (PHP_SAPI !== 'cli') {
     header('X-Frame-Options: SAMEORIGIN');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     if (robots_noindex()) {
-        header('X-Robots-Tag: ' . ROBOTS_TAG);
+        header('X-Robots-Tag: ' . robots_tag());
     }
 }
 

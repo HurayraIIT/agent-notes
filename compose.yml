@@ -108,6 +108,8 @@ services:
       target: web
     image: agent-notes/web:local
     restart: unless-stopped
+    environment:
+      ROBOTS_NOINDEX: ${ROBOTS_NOINDEX:-false} # nginx tags its own errors too (docker/nginx-robots.sh)
     depends_on:
       - app
     expose:
