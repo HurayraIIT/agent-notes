@@ -7,15 +7,16 @@ const SESSION_DAYS = 7;
 
 function current_user(): ?array
 {
-    static $user = false;
-    if ($user !== false) {
-        return $user;
-    }
-    $user = null;
+    // Cached per session token, so a session created mid-request (create_session) is seen at once.
+    static $cache = [];
     if (request_scope() === Scope::Public) {
         return null; // the public host has no sessions, whatever cookie arrives
     }
-    $token = $_COOKIE[SESSION_COOKIE] ?? '';
+    $token = (string) ($_COOKIE[SESSION_COOKIE] ?? '');
+    if (array_key_exists($token, $cache)) {
+        return $cache[$token];
+    }
+    $user = null;
     if ($token !== '') {
         $stmt = db()->prepare(
             'SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id
@@ -24,12 +25,42 @@ function current_user(): ?array
         $stmt->execute([hash('sha256', $token)]);
         $user = $stmt->fetch() ?: null;
     }
-    return $user;
+    return $cache[$token] = $user;
 }
 
 function require_login(): array
 {
-    return current_user() ?? redirect('/login');
+    return current_user() ?? tailnet_trust_sign_in() ?? redirect('/login');
+}
+
+/**
+ * FEATURE_TAILNET_TRUST: signs this visitor in as the trusted-tailnet user, creating that user (verified,
+ * admin) on first use. Only when tailnet_trust_email() says the request came through the tailnet listener;
+ * nothing is mailed. The new sessions row (user, IP, user agent, time) plus users.last_login_* is the
+ * audit record. Rate-limited per IP so cookie-less requests can't pile up sessions. Null when not trusted.
+ */
+function tailnet_trust_sign_in(): ?array
+{
+    $email = tailnet_trust_email();
+    if ($email === null) {
+        return null;
+    }
+    if (rate_limited('tailnet-trust:' . client_ip(), env_int('TAILNET_TRUST_RATE_PER_MIN', 30))) {
+        return null;
+    }
+    // INSERT IGNORE + UPDATE: safe when two first requests race. Sessions only ever go to verified users.
+    db()->prepare('INSERT IGNORE INTO users (email, is_admin, email_verified_at) VALUES (?, 1, NOW())')->execute([$email]);
+    db()->prepare('UPDATE users SET email_verified_at = COALESCE(email_verified_at, NOW()) WHERE email = ?')->execute([$email]);
+    $user = find_user_by_email($email);
+    create_session($user);
+    error_log('tailnet-trust: signed in user ' . $user['id'] . ' from ' . client_ip());
+    return current_user();
+}
+
+/** Is any SMTP block configured? (src/mail.php skips blocks without a host.) */
+function mail_configured(): bool
+{
+    return (string) env('MAIL_PRIMARY_HOST', '') !== '' || (string) env('MAIL_FAILOVER_HOST', '') !== '';
 }
 
 function require_admin(): array
@@ -86,6 +117,10 @@ function send_otp(string $email, string $purpose = 'login'): ?string
     $email = strtolower(trim($email));
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         return 'Please enter a valid email address.';
+    }
+    if (feature(Feature::TailnetTrust) && !mail_configured()) {
+        // Fail closed before storing a code nobody can receive.
+        return 'Email codes are not configured on this server. On the private network you are signed in automatically.';
     }
     if (rate_limited('code:' . $email, 3, 600) || rate_limited('code-ip:' . client_ip(), 10, 600)) {
         return 'Too many code requests. Please wait a few minutes.';

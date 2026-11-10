@@ -36,6 +36,10 @@ curl -si https://share.example.com/n/<a tailnet note's slug>
 
 A public note's URL returns 200 on both hosts. On the full app, `/mcp` without a token returns 401.
 
+## Trusted tailnet: no email at all
+
+If everyone who can reach the full app is trusted (a private tailnet, like an internal admin panel), set `FEATURE_TAILNET_TRUST=true` and `TAILNET_TRUST_USER_EMAIL` to an identifier such as `notes-admin@example.test`. Requests through the tailnet listener are then signed in as that user (created as admin on first use) as soon as a page needs a Member: the dashboard, `/login`, `/register`. Nothing is mailed, so `MAIL_*` can stay empty; emailed codes fail closed with a message. The public listener never signs anyone in. Agents still connect with API tokens created on the dashboard, and share links are made from the dashboard or `create_share_link`.
+
 ## Turning features on
 
 1. `php bin/migrate.php` (the `migrate` service does this in Docker).

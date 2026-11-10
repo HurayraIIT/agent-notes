@@ -12,6 +12,7 @@ enum Feature: string
     case Assets = 'FEATURE_ASSETS';          // upload_asset: images stored per note, outside public/
     case Visibility = 'FEATURE_VISIBILITY';  // tailnet/public split across two listeners
     case ShareLinks = 'FEATURE_SHARE_LINKS'; // expiring read links to one tailnet note, on the public host
+    case TailnetTrust = 'FEATURE_TAILNET_TRUST'; // the tailnet listener signs visitors in as one configured user
 }
 
 function feature(Feature $f): bool
@@ -59,6 +60,21 @@ function request_scope(): Scope
         return Scope::Full;
     }
     return ($_SERVER['AGENT_NOTES_SCOPE'] ?? null) === 'tailnet' ? Scope::Full : Scope::Public;
+}
+
+/**
+ * The trusted-tailnet user's email when this request may be signed in without a code: FEATURE_TAILNET_TRUST
+ * is on, the server-set AGENT_NOTES_SCOPE is exactly "tailnet" (checked directly, so it holds even with
+ * FEATURE_VISIBILITY off), and TAILNET_TRUST_USER_EMAIL is a valid address. Null otherwise. Like
+ * request_scope(), it reads only the FastCGI parameter; no request header plays any part.
+ */
+function tailnet_trust_email(): ?string
+{
+    if (!feature(Feature::TailnetTrust) || ($_SERVER['AGENT_NOTES_SCOPE'] ?? null) !== 'tailnet') {
+        return null;
+    }
+    $email = strtolower(trim((string) env('TAILNET_TRUST_USER_EMAIL', '')));
+    return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null;
 }
 
 /** Base URL of the public host (no trailing slash), or null when it is not configured. */

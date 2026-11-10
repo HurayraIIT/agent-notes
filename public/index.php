@@ -238,8 +238,12 @@ if ($path === '/' || $path === '/docs') {
 
 // ---- Registration ----
 if ($path === '/register') {
-    if (current_user()) {
+    if (current_user() || tailnet_trust_sign_in()) {
         redirect('/dashboard');
+    }
+    if (tailnet_trust_email() !== null) { // trusted but rate-limited: never fall through to the emailed-code forms
+        http_response_code(429);
+        render('error', ['title' => 'Try again in a minute', 'message' => 'Too many automatic sign-ins from this address. Reload in a minute.']);
     }
     if ($method === 'POST') {
         $email = strtolower(trim($_POST['email'] ?? ''));
@@ -280,8 +284,12 @@ if ($path === '/verify' && $method === 'POST') {
 if ($path === '/login') {
     // ?next= (from a note page's Sign in link) rides through both sign-in methods as a hidden field.
     $next = local_path($_POST['next'] ?? $_GET['next'] ?? null, '/dashboard');
-    if (current_user()) {
+    if (current_user() || tailnet_trust_sign_in()) {
         redirect($next);
+    }
+    if (tailnet_trust_email() !== null) { // trusted but rate-limited: never show the emailed-code forms
+        http_response_code(429);
+        render('error', ['title' => 'Try again in a minute', 'message' => 'Too many automatic sign-ins from this address. Reload in a minute.']);
     }
     if ($method === 'POST') {
         if (($_POST['mode'] ?? '') === 'password') {
