@@ -1,0 +1,110 @@
+# Agent Notes on Docker Compose: nginx + php-fpm + MariaDB, schema applied by the one-shot `migrate`.
+#
+#   web:8080  public scope (only matters with FEATURE_VISIBILITY=true; otherwise both ports are the full app)
+#   web:8081  tailnet scope, the full app, published on AGENT_NOTES_TAILNET_BIND (loopback by default)
+#
+# Required in the environment: DB_PASSWORD, DB_ROOT_PASSWORD, APP_URL. Everything else has a default.
+name: agent-notes
+
+x-app-env: &app-env
+  APP_NAME: ${APP_NAME:-Agent Notes}
+  APP_URL: ${APP_URL:?set APP_URL to the full app's https URL}
+  APP_DEBUG: "false"
+  DB_HOST: db
+  DB_PORT: "3306"
+  DB_DATABASE: agent_notes
+  DB_USERNAME: agent_notes
+  DB_PASSWORD: ${DB_PASSWORD:?}
+  ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+  RATE_LIMIT_PER_MIN: ${RATE_LIMIT_PER_MIN:-60}
+  NOTE_MAX_BYTES: ${NOTE_MAX_BYTES:-1048576}
+  FEATURE_HTML_NOTES: ${FEATURE_HTML_NOTES:-false}
+  FEATURE_ASSETS: ${FEATURE_ASSETS:-false}
+  FEATURE_VISIBILITY: ${FEATURE_VISIBILITY:-false}
+  FEATURE_SHARE_LINKS: ${FEATURE_SHARE_LINKS:-false}
+  PUBLIC_URL: ${PUBLIC_URL:-}
+  ASSET_MAX_BYTES: ${ASSET_MAX_BYTES:-5242880}
+  ASSET_MAX_PER_NOTE: ${ASSET_MAX_PER_NOTE:-50}
+  ASSET_STORAGE_PATH: /app/storage/assets
+  SHARE_LINK_TTL_DEFAULT_HOURS: ${SHARE_LINK_TTL_DEFAULT_HOURS:-168}
+  SHARE_LINK_TTL_MAX_HOURS: ${SHARE_LINK_TTL_MAX_HOURS:-720}
+  SHARE_COOKIE_TTL_HOURS: ${SHARE_COOKIE_TTL_HOURS:-12}
+  SHARE_LINK_RATE_PER_MIN: ${SHARE_LINK_RATE_PER_MIN:-30}
+  MAIL_PRIMARY_HOST: ${MAIL_PRIMARY_HOST:-}
+  MAIL_PRIMARY_PORT: ${MAIL_PRIMARY_PORT:-587}
+  MAIL_PRIMARY_USERNAME: ${MAIL_PRIMARY_USERNAME:-}
+  MAIL_PRIMARY_PASSWORD: ${MAIL_PRIMARY_PASSWORD:-}
+  MAIL_PRIMARY_ENCRYPTION: ${MAIL_PRIMARY_ENCRYPTION:-tls}
+  MAIL_PRIMARY_FROM_ADDRESS: ${MAIL_PRIMARY_FROM_ADDRESS:-}
+  MAIL_PRIMARY_FROM_NAME: ${APP_NAME:-Agent Notes}
+  MAIL_FAILOVER_HOST: ${MAIL_FAILOVER_HOST:-}
+  MAIL_FAILOVER_PORT: ${MAIL_FAILOVER_PORT:-587}
+  MAIL_FAILOVER_USERNAME: ${MAIL_FAILOVER_USERNAME:-}
+  MAIL_FAILOVER_PASSWORD: ${MAIL_FAILOVER_PASSWORD:-}
+  MAIL_FAILOVER_ENCRYPTION: ${MAIL_FAILOVER_ENCRYPTION:-tls}
+  MAIL_FAILOVER_FROM_ADDRESS: ${MAIL_FAILOVER_FROM_ADDRESS:-}
+  MAIL_FAILOVER_FROM_NAME: ${APP_NAME:-Agent Notes}
+
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: agent_notes
+      MARIADB_USER: agent_notes
+      MARIADB_PASSWORD: ${DB_PASSWORD:?}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  migrate:
+    build:
+      context: .
+      target: app
+    image: agent-notes/app:local
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["php", "bin/migrate.php"]
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: app
+    image: agent-notes/app:local
+    restart: unless-stopped
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - assets:/app/storage/assets
+
+  web:
+    build:
+      context: .
+      target: web
+    image: agent-notes/web:local
+    restart: unless-stopped
+    depends_on:
+      - app
+    expose:
+      - "8080"
+    ports:
+      - "${AGENT_NOTES_TAILNET_BIND:-127.0.0.1}:${AGENT_NOTES_TAILNET_PORT:-8081}:8081"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/robots.txt"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  db_data:
+  assets:
