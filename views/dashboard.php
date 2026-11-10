@@ -17,10 +17,22 @@
         <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 px-4 py-3">
             <div class="min-w-0 flex-1 basis-full sm:basis-auto">
                 <a href="/n/<?= e($n['slug']) ?>" class="font-medium hover:underline truncate block"><?= e($n['title']) ?></a>
-                <div class="text-xs text-slate-500 dark:text-slate-400">Updated <?= dt_tag($n['updated_at']) ?> · <?= e(fmt_bytes((int) $n['size_bytes'])) ?></div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">Updated <?= dt_tag($n['updated_at']) ?> · <?= e(fmt_bytes((int) $n['size_bytes'])) ?><?php if (feature(Feature::HtmlNotes) && note_format($n) === NoteFormat::Html): ?> · HTML<?php endif; ?><?php if (feature(Feature::Visibility)): ?> · <?= note_visibility($n) === Visibility::Public ? 'Public' : 'Tailnet only' ?><?php endif; ?></div>
             </div>
-            <button onclick="copyText('<?= e(note_url($n['slug'])) ?>', this)"
+            <button onclick="copyText('<?= e(note_url($n['slug'], $n['visibility'] ?? null)) ?>', this)"
                     class="text-xs rounded-md border border-slate-300 dark:border-slate-600 px-2.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0">Copy link</button>
+            <?php if (feature(Feature::ShareLinks) && note_visibility($n) !== Visibility::Public): ?>
+            <form method="post" action="/share/create" class="flex items-center gap-1 shrink-0">
+                <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="slug" value="<?= e($n['slug']) ?>">
+                <select name="ttl_hours" aria-label="Share link lifetime" class="text-xs rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-1.5 py-1.5">
+                    <?php foreach ([24 => '1 day', 168 => '7 days', 720 => '30 days'] as $h => $label): if ($h > env_int('SHARE_LINK_TTL_MAX_HOURS', 720)) continue; ?>
+                    <option value="<?= $h ?>"<?= $h === share_ttl_hours(null)[0] ? ' selected' : '' ?>><?= $label ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <button class="text-xs rounded-md border border-slate-300 dark:border-slate-600 px-2.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800">Share link</button>
+            </form>
+            <?php endif; ?>
             <form method="post" action="/notes/delete" onsubmit="return confirm('Delete this note? Its URL will stop working.')">
                 <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="slug" value="<?= e($n['slug']) ?>">
@@ -31,6 +43,33 @@
     </div>
     <?php endif; ?>
 </section>
+
+<?php if (feature(Feature::ShareLinks)): ?>
+<section id="share-links" class="mb-10">
+    <h2 class="text-lg font-semibold mb-3">Share links</h2>
+    <p class="text-sm text-slate-600 dark:text-slate-400 mb-3">Each link opens one tailnet note, read-only, for someone outside the network. Revoking it works immediately.</p>
+    <?php $live = array_filter($share_links, fn($l) => $l['status'] === 'active'); ?>
+    <?php if (!$live): ?>
+        <div class="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 p-5 text-sm text-slate-500 dark:text-slate-400">No active share links.</div>
+    <?php else: ?>
+    <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800">
+        <?php foreach ($live as $l): ?>
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 px-4 py-3">
+            <div class="min-w-0 flex-1 basis-full sm:basis-auto">
+                <a href="/n/<?= e($l['slug']) ?>" class="font-medium hover:underline truncate block"><?= e($l['title']) ?></a>
+                <div class="text-xs text-slate-500 dark:text-slate-400">Expires <?= dt_tag($l['expires_at']) ?> · opened <?= (int) $l['use_count'] ?>×<?php if ($l['last_used_at']): ?>, last <?= dt_tag($l['last_used_at']) ?><?php endif; ?></div>
+            </div>
+            <form method="post" action="/share/revoke" onsubmit="return confirm('Revoke this share link? It stops working immediately.')">
+                <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="id" value="<?= (int) $l['id'] ?>">
+                <button class="text-xs rounded-md border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 px-2.5 py-1.5 hover:bg-red-50 dark:hover:bg-red-950/50 shrink-0">Revoke</button>
+            </form>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+</section>
+<?php endif; ?>
 
 <section class="mb-10">
     <h2 class="text-lg font-semibold mb-3">API tokens</h2>

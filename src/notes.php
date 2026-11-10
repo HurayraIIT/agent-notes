@@ -2,9 +2,40 @@
 
 declare(strict_types=1);
 
-function note_url(string $slug): string
+/** A note's URL: on the public host when the note is public (FEATURE_VISIBILITY + PUBLIC_URL), else on the app. */
+function note_url(string $slug, ?string $visibility = null): string
 {
+    if ($visibility === Visibility::Public->value && feature(Feature::Visibility) && public_url() !== null) {
+        return public_url() . '/n/' . $slug;
+    }
     return app_url('/n/' . $slug);
+}
+
+/**
+ * Columns every note read selects. The optional ones are read only when their feature is on, so an
+ * install that never ran the migration keeps working with every flag off (tests/features_off.php).
+ */
+function note_columns(): string
+{
+    $cols = 'id, user_id, slug, title, filename, content, size_bytes, views, created_at, updated_at';
+    if (feature(Feature::HtmlNotes)) {
+        $cols .= ', format';
+    }
+    if (feature(Feature::Visibility)) {
+        $cols .= ', visibility';
+    }
+    return $cols;
+}
+
+/** The note's format; an html note reads as markdown (escaped) while FEATURE_HTML_NOTES is off. */
+function note_format(array $note): NoteFormat
+{
+    return feature(Feature::HtmlNotes) && ($note['format'] ?? '') === NoteFormat::Html->value ? NoteFormat::Html : NoteFormat::Markdown;
+}
+
+function note_visibility(array $note): Visibility
+{
+    return Visibility::tryFrom((string) ($note['visibility'] ?? '')) ?? Visibility::Tailnet;
 }
 
 function slugify(string $title): string
@@ -24,7 +55,7 @@ function generate_slug(): string
 }
 
 /** @return array{0: ?array, 1: ?string} [note, error] */
-function create_note(int $userId, string $title, string $content, ?string $filename = null): array
+function create_note(int $userId, string $title, string $content, ?string $filename = null, ?NoteFormat $format = null, ?Visibility $visibility = null): array
 {
     $title = trim($title);
     if ($title === '') {
@@ -36,12 +67,22 @@ function create_note(int $userId, string $title, string $content, ?string $filen
         return [null, "content is {$size} bytes; the maximum is {$max} bytes (1 MB)"];
     }
     $fname = ($filename !== null && trim($filename) !== '') ? slugify($filename) : slugify($title);
-    $stmt = db()->prepare('INSERT INTO notes (user_id, slug, title, filename, content, size_bytes) VALUES (?, ?, ?, ?, ?, ?)');
+    $cols = 'user_id, slug, title, filename, content, size_bytes';
+    $extra = [];
+    if (feature(Feature::HtmlNotes)) {
+        $cols .= ', format';
+        $extra[] = ($format ?? NoteFormat::Markdown)->value;
+    }
+    if (feature(Feature::Visibility)) {
+        $cols .= ', visibility';
+        $extra[] = ($visibility ?? Visibility::Tailnet)->value;
+    }
+    $stmt = db()->prepare("INSERT INTO notes ({$cols}) VALUES (" . rtrim(str_repeat('?, ', 6 + count($extra)), ', ') . ')');
     // ponytail: retry loop is the cheap fix for the smaller 8-char space; 62^8 ≈ 2e14 keeps collisions near-never.
     for ($try = 0; ; $try++) {
         $slug = generate_slug();
         try {
-            $stmt->execute([$userId, $slug, substr($title, 0, 255), $fname, $content, $size]);
+            $stmt->execute([$userId, $slug, substr($title, 0, 255), $fname, $content, $size, ...$extra]);
             break;
         } catch (PDOException $e) {
             if ($try < 5 && str_contains($e->getMessage(), 'slug')) {
@@ -56,7 +97,7 @@ function create_note(int $userId, string $title, string $content, ?string $filen
 function get_note(string $slug, ?int $userId = null): ?array
 {
     // ponytail: explicit columns so the pdf_cache blob never rides along on page views
-    $sql = 'SELECT id, user_id, slug, title, filename, content, size_bytes, views, created_at, updated_at FROM notes WHERE slug = ?';
+    $sql = 'SELECT ' . note_columns() . ' FROM notes WHERE slug = ?';
     $params = [$slug];
     if ($userId !== null) {
         $sql .= ' AND user_id = ?';
@@ -68,13 +109,15 @@ function get_note(string $slug, ?int $userId = null): ?array
 }
 
 /** @return array{0: ?array, 1: ?string} [note, error] */
-function update_note(int $userId, string $slug, ?string $title, ?string $content, ?string $filename = null): array
+function update_note(int $userId, string $slug, ?string $title, ?string $content, ?string $filename = null, ?NoteFormat $format = null, ?Visibility $visibility = null): array
 {
     $note = get_note($slug, $userId);
     if (!$note) {
         return [null, "note '{$slug}' not found"];
     }
-    if ($title === null && $content === null && $filename === null) {
+    $format = feature(Feature::HtmlNotes) ? $format : null;
+    $visibility = feature(Feature::Visibility) ? $visibility : null;
+    if ($title === null && $content === null && $filename === null && $format === null && $visibility === null) {
         return [null, 'provide title, content, and/or filename to update'];
     }
     if ($content !== null) {
@@ -94,6 +137,12 @@ function update_note(int $userId, string $slug, ?string $title, ?string $content
         db()->prepare('UPDATE notes SET filename = ?, pdf_cache = NULL WHERE id = ?')
             ->execute([slugify($filename), $note['id']]);
     }
+    if ($format !== null) {
+        db()->prepare('UPDATE notes SET format = ?, pdf_cache = NULL WHERE id = ?')->execute([$format->value, $note['id']]);
+    }
+    if ($visibility !== null) { // only ever an explicit argument: nothing changes visibility implicitly
+        db()->prepare('UPDATE notes SET visibility = ? WHERE id = ?')->execute([$visibility->value, $note['id']]);
+    }
     return [get_note($slug, $userId), null];
 }
 
@@ -101,9 +150,10 @@ function list_notes(int $userId, int $limit = 50, int $offset = 0): array
 {
     $limit = max(1, min($limit, 200));
     $offset = max(0, $offset);
+    $extra = (feature(Feature::HtmlNotes) ? ', format' : '') . (feature(Feature::Visibility) ? ', visibility' : '');
     $stmt = db()->prepare(
-        'SELECT slug, title, filename, size_bytes, views, created_at, updated_at FROM notes
-         WHERE user_id = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?'
+        "SELECT slug, title, filename, size_bytes, views, created_at, updated_at{$extra} FROM notes
+         WHERE user_id = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?"
     );
     $stmt->bindValue(1, $userId, PDO::PARAM_INT);
     $stmt->bindValue(2, $limit, PDO::PARAM_INT);
@@ -114,7 +164,33 @@ function list_notes(int $userId, int $limit = 50, int $offset = 0): array
 
 function delete_note(int $userId, string $slug): bool
 {
-    $stmt = db()->prepare('DELETE FROM notes WHERE slug = ? AND user_id = ?');
-    $stmt->execute([$slug, $userId]);
-    return $stmt->rowCount() > 0;
+    return delete_notes('slug = ? AND user_id = ?', [$slug, $userId]) > 0;
+}
+
+/**
+ * Every note deletion goes through here, so a note's asset directory always goes with it. Share links
+ * cascade in the database. The row goes first: if removing the files fails, they are unreachable
+ * (no note, no route) rather than a note pointing at missing files.
+ */
+function delete_notes(string $where, array $params): int
+{
+    $stmt = db()->prepare("SELECT id FROM notes WHERE {$where}");
+    $stmt->execute($params);
+    $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    if (!$ids) {
+        return 0;
+    }
+    $in = implode(',', array_map('intval', $ids));
+    db()->exec("DELETE FROM notes WHERE id IN ({$in})");
+    foreach ($ids as $id) {
+        purge_note_assets((int) $id);
+    }
+    return count($ids);
+}
+
+/** Deletes a user and everything they own (notes and their assets; tokens and sessions cascade). */
+function delete_user(int $userId): void
+{
+    delete_notes('user_id = ?', [$userId]);
+    db()->prepare('DELETE FROM users WHERE id = ?')->execute([$userId]);
 }

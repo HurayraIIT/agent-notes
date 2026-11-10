@@ -229,6 +229,7 @@ function cmd_block(string $command, string $label = ''): string
     return $html;
 }
 
+require __DIR__ . '/features.php';
 require __DIR__ . '/http.php';
 require __DIR__ . '/auth.php';
 require __DIR__ . '/mail.php';
@@ -238,3 +239,6 @@ require __DIR__ . '/ratelimit.php';
 require __DIR__ . '/mcp.php';
 require __DIR__ . '/pdf.php';
 require __DIR__ . '/export.php';
+require __DIR__ . '/assets.php';
+require __DIR__ . '/share.php';
+require __DIR__ . '/serve.php';

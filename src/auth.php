@@ -12,6 +12,9 @@ function current_user(): ?array
         return $user;
     }
     $user = null;
+    if (request_scope() === Scope::Public) {
+        return null; // the public host has no sessions, whatever cookie arrives
+    }
     $token = $_COOKIE[SESSION_COOKIE] ?? '';
     if ($token !== '') {
         $stmt = db()->prepare(
