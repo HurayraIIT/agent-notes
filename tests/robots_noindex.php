@@ -21,15 +21,44 @@ $fail = function (string $why) use (&$failed): void {
     echo "FAIL: $why\n";
 };
 
-// Structural: one value, set in one way, never removed.
-foreach (array_merge(glob("$repo/src/*.php"), glob("$repo/public/*.php"), glob("$repo/views/*.php"), glob("$repo/views/admin/*.php")) as $file) {
-    $code = file_get_contents($file);
-    str_contains($code, 'header_remove') && $fail(basename($file) . ' calls header_remove(), which could drop X-Robots-Tag');
-    preg_match_all("/'X-Robots-Tag:([^']*)'(\s*\.\s*robots_tag\(\))?/", $code, $tags, PREG_SET_ORDER);
-    foreach ($tags as $t) {
-        (trim($t[1]) === '' && !empty($t[2])) || $fail(basename($file) . " sets X-Robots-Tag to something other than robots_tag(): {$t[0]}");
+/** The file's code tokens: no whitespace, comments or inline HTML, each as [id, text]. */
+function code_tokens(string $file): array
+{
+    $out = [];
+    foreach (token_get_all(file_get_contents($file)) as $t) {
+        $t = is_array($t) ? $t : [0, $t];
+        if (!in_array($t[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT, T_INLINE_HTML, T_OPEN_TAG, T_CLOSE_TAG], true)) {
+            $out[] = $t;
+        }
+    }
+    return $out;
+}
+
+/** The value of a plain string literal token, or null. */
+function literal(array $t): ?string
+{
+    return $t[0] === T_CONSTANT_ENCAPSED_STRING ? stripcslashes(substr($t[1], 1, -1)) : null;
+}
+
+// Structural, on PHP tokens: every string that names X-Robots-Tag is exactly 'X-Robots-Tag: ' followed
+// by `. robots_tag()` and the end of the expression, and nothing calls header_remove().
+$code = array_merge(glob("$repo/src/*.php"), glob("$repo/public/*.php"), glob("$repo/views/*.php"), glob("$repo/views/admin/*.php"));
+$writers = 0;
+foreach ($code as $file) {
+    $tk = code_tokens($file);
+    foreach ($tk as $i => [$id, $text]) {
+        if ($id === T_STRING && strtolower($text) === 'header_remove') {
+            $fail(basename($file) . ' calls header_remove(), which could drop X-Robots-Tag');
+        }
+        if (in_array($id, [T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE], true) && stripos($text, 'x-robots-tag') !== false) {
+            $next = array_map(fn($t) => $t[1], array_slice($tk, $i + 1, 5));
+            $ok = $id === T_CONSTANT_ENCAPSED_STRING && literal([$id, $text]) === 'X-Robots-Tag: '
+                && array_slice($next, 0, 4) === ['.', 'robots_tag', '(', ')'] && in_array($next[4] ?? '', [')', ',', ']', ';'], true);
+            $ok ? $writers++ : $fail(basename($file) . " sets X-Robots-Tag some other way than 'X-Robots-Tag: ' . robots_tag(): {$text} " . implode(' ', $next));
+        }
     }
 }
+$writers >= 5 || $fail("found only $writers X-Robots-Tag writers; did they move?");
 
 // A temporary copy of the app with no .env: vendor is linked, the rest copied.
 $root = sys_get_temp_dir() . '/an-robots-' . bin2hex(random_bytes(4));
@@ -40,22 +69,38 @@ foreach (['public', 'src', 'views', 'skills'] as $dir) {
     $rc === 0 || $fail("could not copy $dir");
 }
 
-$index = file_get_contents("$root/public/index.php");
-// Every pattern route needs a sample below; a new one fails here until it gets one.
-preg_match_all("/preg_match\('#\^(\/[^#]*)#/", $index . file_get_contents("$root/src/serve.php"), $patterns);
-$known = ['/n/([A-Za-z0-9-]+)/edit$', '/n/([A-Za-z0-9-]+)(?:(/raw|/download|/pdf)|/assets/([^/]+))?$', '/admin/user/(\d+)$', '/s/([^/]+)$'];
-count($patterns[1]) >= 4 || $fail('found only ' . count($patterns[1]) . ' pattern routes');
-foreach (array_unique($patterns[1]) as $pat) {
-    in_array($pat, $known, true) || $fail("pattern route #^{$pat}# has no sample path in this test");
+// Routes, from tokens: `$path === '<literal>'` (either side), `str_starts_with($path, '<prefix>')`, and
+// every string literal shaped like an anchored path regex. Each regex must match one of the samples
+// below, so a new pattern route fails until it gets one.
+$literals = $prefixes = $patterns = [];
+foreach (["$repo/public/index.php", "$repo/src/serve.php"] as $file) {
+    $tk = code_tokens($file);
+    foreach ($tk as $i => $t) {
+        $v = literal($t);
+        if ($v === null) {
+            continue;
+        }
+        $before = array_map(fn($t) => $t[1], array_slice($tk, max(0, $i - 2), 2));
+        $after = array_map(fn($t) => $t[1], array_slice($tk, $i + 1, 2));
+        if ($before === ['$path', '==='] || $after === ['===', '$path']) {
+            $literals[] = $v;
+        } elseif (array_map(fn($t) => $t[1], array_slice($tk, max(0, $i - 4), 4)) === ['str_starts_with', '(', '$path', ',']) {
+            $prefixes[] = $v;
+        } elseif (preg_match('/^([#~!@%|\/])\^\/.*\1[a-zA-Z]*$/s', $v)) {
+            $patterns[] = $v;
+        }
+    }
 }
-preg_match_all("/\\\$path === '(\\/[^']*)'/", $index, $m1);
-preg_match_all("/str_starts_with\\(\\\$path, '(\\/[^']*)'\\)/", $index, $m2);
 $slug = 'AbCdEfGh';
-$paths = array_unique(array_merge($m1[1], array_map(fn($p) => $p . 'x', $m2[1]), [
+$paths = array_unique(array_merge($literals, array_map(fn($p) => $p . 'x', $prefixes), [
     "/n/$slug", "/n/$slug/raw", "/n/$slug/download", "/n/$slug/pdf", "/n/$slug/edit",
     "/n/$slug/assets/0123456789abcdef0123.png", '/s/' . str_repeat('A', 43), '/s/short', '/admin/user/1', '/no-such-route',
 ]));
-count($m1[1]) >= 20 || $fail('found only ' . count($m1[1]) . " route literals in public/index.php; did the routing change shape?");
+count($literals) >= 20 || $fail('found only ' . count($literals) . ' route literals; did the routing change shape?');
+count(array_unique($patterns)) >= 4 || $fail('found only ' . count(array_unique($patterns)) . ' pattern routes');
+foreach (array_unique($patterns) as $pat) {
+    array_filter($paths, fn($p) => preg_match($pat, $p) === 1) || $fail("pattern route {$pat} matches none of this test's sample paths");
+}
 
 $router = tempnam(sys_get_temp_dir(), 'an-robots-') . '.php';
 file_put_contents($router, '<?php if (getenv("AGENT_NOTES_SCOPE")) { $_SERVER["AGENT_NOTES_SCOPE"] = getenv("AGENT_NOTES_SCOPE"); }'

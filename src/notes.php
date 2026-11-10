@@ -45,8 +45,8 @@ function slugify(string $title): string
 }
 
 /**
- * Slug length in base62 characters. SLUG_BYTES (16–32; any set value is raised to at least 16, i.e.
- * 128 bits) sets the entropy in bytes, rounded up to whole characters (16 bytes: 22 characters, 131
+ * Slug length in base62 characters. SLUG_BYTES (16–32; a positive value below 16 is raised to 16,
+ * i.e. 128 bits; 0, empty or not a number keeps the original length) sets the entropy in bytes, rounded up to whole characters (16 bytes: 22 characters, 131
  * bits). Unset, the original 8 characters (about 47 bits). Existing notes keep their slugs. Longer
  * slugs need migration 002, which also makes notes.slug case-sensitive (ascii_bin): under the old
  * case-insensitive collation a lookup matches any letter case, which would cut the entropy.
