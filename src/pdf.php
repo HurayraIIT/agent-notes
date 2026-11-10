@@ -15,10 +15,14 @@ function note_pdf(array $note): never
     // A tailnet note read on the public host (through a share link) prints no URL: its own URL names the
     // private app host. That copy is never cached, so the cache only ever holds the note's own URL.
     $shared = request_scope() === Scope::Public && note_visibility($note) !== Visibility::Public;
+    // The cache is read and written only while the row still has the visibility this request saw, so
+    // a visibility change mid-render can't publish or serve a PDF carrying the other host's URL.
+    $match = feature(Feature::Visibility) ? ' AND visibility = ?' : '';
+    $key = feature(Feature::Visibility) ? [$note['id'], note_visibility($note)->value] : [$note['id']];
     $pdf = null;
     if (!$shared) {
-        $stmt = db()->prepare('SELECT pdf_cache FROM notes WHERE id = ?');
-        $stmt->execute([$note['id']]);
+        $stmt = db()->prepare("SELECT pdf_cache FROM notes WHERE id = ?{$match}");
+        $stmt->execute($key);
         $pdf = $stmt->fetchColumn();
     }
 
@@ -27,8 +31,8 @@ function note_pdf(array $note): never
     } elseif (!$pdf) {
         $pdf = generate_pdf($note);
         // updated_at = updated_at: a cache write is not an edit
-        db()->prepare('UPDATE notes SET pdf_cache = ?, updated_at = updated_at WHERE id = ?')
-            ->execute([$pdf, $note['id']]);
+        db()->prepare("UPDATE notes SET pdf_cache = ?, updated_at = updated_at WHERE id = ?{$match}")
+            ->execute([$pdf, ...$key]);
     }
 
     header('Content-Type: application/pdf');
