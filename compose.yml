@@ -89,6 +89,14 @@ services:
         condition: service_healthy
     volumes:
       - assets:/app/storage/assets
+    healthcheck:
+      # PHP-FPM accepts FastCGI connections on 9000. Deploy tools that wait for
+      # every running service to report healthy need this to be known.
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
   web:
     build:
